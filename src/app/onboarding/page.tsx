@@ -17,21 +17,27 @@ const questions = [
   { key: "experience", title: "¿Cuál es tu experiencia entrenando?", description: "Así evitamos darte un plan demasiado fácil o demasiado exigente.", type: "single_select", options: ["Nunca he entrenado", "Menos de 1 año", "Entre 1 y 3 años", "Entre 3 y 5 años", "Más de 5 años"] },
   { key: "days_per_week", title: "¿Cuántos días puedes entrenar?", description: "Elegiremos una frecuencia sostenible para tu semana.", type: "single_select", options: ["2 días", "3 días", "4 días", "5 días", "6 días"] },
   { key: "session_duration", title: "¿Cuánto tiempo tienes por sesión?", description: "Un buen plan empieza por respetar tu tiempo disponible.", type: "single_select", options: ["30 minutos", "45 minutos", "60 minutos", "90 minutos"] },
-  { key: "training_place", title: "¿Dónde entrenas habitualmente?", description: "Adaptaremos los ejercicios a tu entorno.", type: "single_select", options: ["Gimnasio completo", "Gimnasio básico", "Casa", "Mixto"] },
-  { key: "priorities", title: "¿Qué zonas quieres desarrollar más?", description: "Puedes elegir hasta tres prioridades.", type: "multi_select", options: ["Pecho", "Espalda", "Hombros", "Brazos", "Piernas", "Glúteos", "Core"] },
+  { key: "training_place", title: "¿Dónde entrenas habitualmente?", description: "Adaptaremos los ejercicios a tu entorno y al material que tienes disponible.", type: "single_select", options: ["Gimnasio completo", "Gimnasio básico", "Casa", "Mixto"] },
   { key: "workout_planning_mode", title: "¿Cómo quieres empezar tu rutina?", description: "Puedes dejar que Momentum la prepare por ti o crearla a tu manera desde tu dashboard.", type: "single_select", options: ["Automática", "Manual"] },
   { key: "daily_activity", title: "¿Cómo es tu actividad diaria?", description: "Esto ayuda a entender mejor tu ritmo de vida.", type: "single_select", options: ["Trabajo sentado", "Algo activo", "Activo", "Trabajo físico exigente"] },
   { key: "sleep", title: "¿Cuántas horas duermes normalmente?", description: "El descanso también forma parte del progreso.", type: "single_select", options: ["Menos de 5", "5 - 6", "6 - 7", "7 - 8", "Más de 8"] },
   { key: "diet", title: "¿Cómo definirías tu alimentación?", description: "No hay una respuesta correcta: buscamos que el plan sea realista.", type: "single_select", options: ["Omnívoro", "Vegetariano", "Vegano", "Otra"] },
   { key: "food_restrictions", title: "¿Tienes alergias o intolerancias alimentarias?", description: "Podemos adaptar la dieta para evitar alimentos que te hagan sentir peor.", type: "multi_select", options: foodRestrictionOptions },
-  { key: "disliked_foods", title: "¿Qué alimentos prefieres no incluir?", description: "Los evitaremos al preparar tus comidas. Puedes dejarlo vacío.", type: "multi_select", options: ["Pescado", "Carne roja", "Pollo y pavo", "Huevos", "Lácteos", "Legumbres", "Tofu y soja", "Verduras verdes", "Fruta"] },
-  { key: "preferred_meal_styles", title: "¿Qué comidas te apetecen más?", description: "Usaremos estas preferencias para dar variedad al plan. Puedes elegir varias.", type: "multi_select", options: ["Desayunos dulces", "Desayunos salados", "Bowls", "Platos de cuchara", "Ensaladas completas", "Pasta y arroz"] },
   { key: "meals_out_slots", title: "¿Qué comidas sueles hacer fuera de casa?", description: "Las adaptaremos con una guía flexible para tu horario habitual. Puedes dejarlo vacío.", type: "multi_select", options: ["Desayuno", "Media mañana", "Comida", "Merienda", "Cena"] },
   { key: "injuries", title: "¿Tienes alguna lesión o limitación?", description: "La seguridad está por encima de cualquier objetivo.", type: "multi_select", options: injuryOptions },
   { key: "motivation", title: "¿Por qué quieres conseguir este objetivo?", description: "Esta respuesta nos ayudará a acompañarte de una forma más personal.", type: "text", placeholder: "Quiero sentirme..." },
 ] as const;
 
-const optionalQuestionKeys = new Set(["target_weight", "disliked_foods", "preferred_meal_styles", "meals_out_slots"]);
+const optionalQuestionKeys = new Set(["target_weight", "meals_out_slots"]);
+
+const optionDescriptions: Record<string, Record<string, string>> = {
+  training_place: {
+    "Gimnasio completo": "Máquinas, poleas, barras, mancuernas y material variado.",
+    "Gimnasio básico": "Mancuernas, barras y material esencial; sin depender de máquinas avanzadas.",
+    Casa: "Peso corporal, bandas, mancuernas o kettlebell, según lo que tengas.",
+    Mixto: "Combinas casa y gimnasio según el día o la disponibilidad.",
+  },
+};
 
 type Answer = string | number | string[];
 
@@ -165,7 +171,6 @@ export default function OnboardingPage() {
       ["Disponibilidad", answers.days_per_week],
       ["Duración", answers.session_duration],
       ["Entorno", answers.training_place],
-      ["Prioridades", answers.priorities],
     ];
 
     return (
@@ -190,7 +195,7 @@ export default function OnboardingPage() {
           <p className="text-sm font-semibold uppercase tracking-[0.16em] text-[#819078]">{progress}% completado</p>
           <h1 className="mt-5 max-w-2xl text-4xl font-semibold leading-tight tracking-[-0.06em] sm:text-6xl">{question.title}</h1>
           <p className="mt-5 max-w-xl text-lg leading-8 text-[#68736b]">{question.description}</p>
-          {question.type === "text" ? <textarea value={typeof currentAnswer === "string" ? currentAnswer : ""} onChange={(event) => selectAnswer(event.target.value)} placeholder={question.placeholder} className="mt-10 min-h-36 w-full max-w-xl resize-none rounded-2xl border border-[#cfd7c8] bg-[#f8f7f1] p-5 text-lg outline-none transition focus:border-[#72873f]" /> : question.type === "number" ? <div className="mt-10 flex max-w-sm items-center gap-3 border-b-2 border-[#aeb9a2] pb-3"><input autoFocus type="number" value={typeof currentAnswer === "number" ? currentAnswer : ""} onChange={(event) => selectAnswer(event.target.value ? Number(event.target.value) : "")} className="w-full bg-transparent text-4xl font-semibold outline-none" placeholder="0" /><span className="text-[#68736b]">{question.unit}</span></div> : <div className="mt-10 grid max-w-2xl gap-3 sm:grid-cols-2">{question.options?.map((option) => { const selected = Array.isArray(currentAnswer) ? currentAnswer.includes(option) : currentAnswer === option; return <button type="button" key={option} onClick={() => selectAnswer(option)} className={`flex min-h-16 items-center justify-between rounded-2xl border px-5 text-left transition ${selected ? "border-[#72873f] bg-[#e7f5b4]" : "border-[#d3dbcf] bg-[#f8f7f1] hover:border-[#9aaa89]"}`}><span className="font-medium">{option}</span>{selected && <Check size={19} className="text-[#60703d]" />}</button>; })}</div>}
+          {question.type === "text" ? <textarea value={typeof currentAnswer === "string" ? currentAnswer : ""} onChange={(event) => selectAnswer(event.target.value)} placeholder={question.placeholder} className="mt-10 min-h-36 w-full max-w-xl resize-none rounded-2xl border border-[#cfd7c8] bg-[#f8f7f1] p-5 text-lg outline-none transition focus:border-[#72873f]" /> : question.type === "number" ? <div className="mt-10 flex max-w-sm items-center gap-3 border-b-2 border-[#aeb9a2] pb-3"><input autoFocus type="number" value={typeof currentAnswer === "number" ? currentAnswer : ""} onChange={(event) => selectAnswer(event.target.value ? Number(event.target.value) : "")} className="w-full bg-transparent text-4xl font-semibold outline-none" placeholder="0" /><span className="text-[#68736b]">{question.unit}</span></div> : <div className="mt-10 grid max-w-2xl gap-3 sm:grid-cols-2">{question.options?.map((option) => { const selected = Array.isArray(currentAnswer) ? currentAnswer.includes(option) : currentAnswer === option; const optionDescription = optionDescriptions[question.key]?.[option]; return <button type="button" key={option} onClick={() => selectAnswer(option)} className={`flex min-h-16 items-center justify-between gap-4 rounded-2xl border px-5 py-4 text-left transition ${selected ? "border-[#72873f] bg-[#e7f5b4]" : "border-[#d3dbcf] bg-[#f8f7f1] hover:border-[#9aaa89]"}`}><span><span className="block font-medium">{option}</span>{optionDescription ? <span className="mt-1 block text-sm leading-5 text-[#68736b]">{optionDescription}</span> : null}</span>{selected && <Check size={19} className="shrink-0 text-[#60703d]" />}</button>; })}</div>}
           {error && <p className="mt-6 text-sm font-medium text-[#a64e3c]">{error}</p>}
         </section>
         <footer className="flex items-center justify-between border-t border-[#d9ddd3] pt-5"><button type="button" disabled={currentIndex === 0 || isSaving} onClick={() => setCurrentIndex((index) => Math.max(index - 1, 0))} className="inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold text-[#68736b] disabled:opacity-40"><ArrowLeft size={17} /> Anterior</button><button type="button" disabled={isSaving || !sessionToken} onClick={goNext} className="inline-flex items-center gap-2 rounded-full bg-[#18231f] px-6 py-3 text-sm font-semibold text-[#f6f4ed] disabled:cursor-not-allowed disabled:opacity-40">{isSaving ? <LoaderCircle size={17} className="animate-spin" /> : <>Siguiente <ArrowRight size={17} /></>}</button></footer>
