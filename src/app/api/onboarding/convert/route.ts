@@ -51,11 +51,6 @@ function stringValues(value: unknown) {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string" && item !== "Ninguna") : [];
 }
 
-function mealOutSlots(value: unknown) {
-  const slots: Record<string, string> = { Desayuno: "breakfast", "Media mañana": "mid_morning", Comida: "lunch", Merienda: "afternoon_snack", Cena: "dinner" };
-  return stringValues(value).map((label) => slots[label]).filter((slot): slot is string => Boolean(slot));
-}
-
 export async function POST(request: Request) {
   const parsedBody = convertSchema.safeParse(await request.json());
 
@@ -122,6 +117,7 @@ export async function POST(request: Request) {
       stress_level: "not_provided",
       days_per_week: firstNumber(values.get("days_per_week"), 3),
       session_duration_minutes: firstNumber(values.get("session_duration"), 60),
+      meal_count: firstNumber(values.get("meal_count"), 4),
       training_place: textValue(values.get("training_place")),
       workout_planning_mode: textValue(values.get("workout_planning_mode")) === "Manual" ? "manual" : "auto",
       restrictions: restrictionsFromInjuryLabels(values.get("injuries")),
@@ -129,7 +125,7 @@ export async function POST(request: Request) {
       priorities: priorityTagsFromLabels(values.get("priorities")),
       disliked_foods: stringValues(values.get("disliked_foods")),
       preferred_meal_styles: stringValues(values.get("preferred_meal_styles")),
-      meals_out_slots: mealOutSlots(values.get("meals_out_slots")),
+      meals_out_slots: [],
     };
 
     if (!profile.primary_goal || !profile.experience || !profile.daily_activity || !Number.isFinite(profile.age) || !Number.isFinite(profile.height_cm) || !Number.isFinite(profile.current_weight_kg) || !Number.isFinite(profile.sleep_hours)) {
