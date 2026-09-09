@@ -1,9 +1,28 @@
 import { createHash, randomBytes } from "node:crypto";
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function POST() {
+  const cookieStore = await cookies();
+  const existingToken = cookieStore.get("momentum_onboarding_token")?.value;
+
+  if (existingToken) {
+    const existingTokenHash = createHash("sha256").update(existingToken).digest("hex");
+    const supabase = createAdminClient();
+    const { data: existingSession } = await supabase
+      .from("onboarding_sessions")
+      .select("id, status, expires_at")
+      .eq("session_token_hash", existingTokenHash)
+      .in("status", ["active", "completed"])
+      .maybeSingle();
+
+    if (existingSession && new Date(existingSession.expires_at) > new Date()) {
+      return NextResponse.json({ sessionId: existingSession.id, sessionToken: existingToken, expiresAt: existingSession.expires_at }, { status: 200 });
+    }
+  }
+
   const sessionToken = randomBytes(32).toString("hex");
   const sessionTokenHash = createHash("sha256")
     .update(sessionToken)

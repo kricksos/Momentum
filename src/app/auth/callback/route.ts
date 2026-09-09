@@ -19,6 +19,15 @@ export async function GET(request: Request) {
   }
 
   const loginUrl = new URL("/login?confirmed=1", requestUrl.origin);
-  if (onboardingToken) loginUrl.searchParams.set("onboarding_token", onboardingToken);
-  return NextResponse.redirect(loginUrl);
+  const response = NextResponse.redirect(loginUrl);
+  if (onboardingToken) {
+    response.cookies.set("momentum_onboarding_token", onboardingToken, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 60 * 60 * 24,
+      path: "/",
+    });
+  }
+  return response;
 }
