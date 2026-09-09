@@ -70,6 +70,7 @@ export default function OnboardingPage() {
       })
       .then((data: { sessionToken: string }) => {
         window.sessionStorage.setItem("momentum_onboarding_token", data.sessionToken);
+        window.localStorage.setItem("momentum_onboarding_token", data.sessionToken);
         setSessionToken(data.sessionToken);
       })
       .catch(() => setError("No hemos podido iniciar tu plan. Inténtalo de nuevo en unos segundos."))
@@ -82,6 +83,13 @@ export default function OnboardingPage() {
       if (value === "Ninguna") {
         setAnswers((previous) => ({ ...previous, [question.key]: ["Ninguna"] }));
         return;
+      }
+      const selectedWithoutNone = selected.filter((item) => item !== "Ninguna");
+      const nextValue = selected.includes(String(value))
+        ? selectedWithoutNone.filter((item) => item !== String(value))
+        : [...selectedWithoutNone, String(value)];
+      setAnswers((previous) => ({ ...previous, [question.key]: nextValue }));
+      return;
     }
 
     setAnswers((previous) => ({ ...previous, [question.key]: value }));
@@ -138,6 +146,7 @@ export default function OnboardingPage() {
         if (!newSessionResponse.ok) throw new Error("No hemos podido reiniciar tu sesión.");
         const newSession = await newSessionResponse.json() as { sessionToken: string };
         window.sessionStorage.setItem("momentum_onboarding_token", newSession.sessionToken);
+        window.localStorage.setItem("momentum_onboarding_token", newSession.sessionToken);
         setSessionToken(newSession.sessionToken);
         response = await saveAnswer(newSession.sessionToken);
       }
@@ -195,5 +204,4 @@ export default function OnboardingPage() {
       </div>
     </main>
   );
-}
 }

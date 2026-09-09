@@ -37,7 +37,7 @@ export default function LoginPage() {
       return;
     }
 
-    const sessionToken = window.sessionStorage.getItem("momentum_onboarding_token");
+    const sessionToken = window.sessionStorage.getItem("momentum_onboarding_token") ?? window.localStorage.getItem("momentum_onboarding_token");
     const conversionResponse = await fetch("/api/onboarding/convert", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -54,6 +54,7 @@ export default function LoginPage() {
 
     if (conversionResult.converted) {
       window.sessionStorage.removeItem("momentum_onboarding_token");
+      window.localStorage.removeItem("momentum_onboarding_token");
       if (conversionResult.planningMode !== "manual") {
         setStatus("Perfil guardado. Preparando tu rutina y tu dieta...");
         const planResponse = await fetch("/api/plans/generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) });
