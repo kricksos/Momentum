@@ -10,6 +10,9 @@ export type PlanningProfile = {
   experience: string;
   daysPerWeek: number;
   sessionMinutes: number;
+  dailyActivity?: string;
+  sleepHours?: number;
+  trainingPlace?: string;
   mealCount: number;
   dietPreference?: string;
   calorieAdjustment?: number;
@@ -45,7 +48,10 @@ function numberFromText(value: string, fallback: number) {
   return match ? Number(match[0]) : fallback;
 }
 
-function activityFactor(experience: string, daysPerWeek: number) {
+function activityFactor(experience: string, daysPerWeek: number, dailyActivity = "") {
+  if (dailyActivity.includes("físico")) return 1.65;
+  if (dailyActivity.includes("Activo")) return 1.55;
+  if (dailyActivity.includes("Algo activo")) return 1.45;
   if (daysPerWeek >= 5) return 1.55;
   if (daysPerWeek >= 3) return 1.45;
   return experience.includes("Nunca") ? 1.3 : 1.375;
@@ -184,12 +190,15 @@ function catalogInfoFromRows(catalog: PlanningCatalogExercise[]): ExerciseCatalo
   return Object.fromEntries(catalog.map((exercise) => [exercise.name, { restrictions: exercise.restrictions, alternatives: [], muscleGroups: exercise.muscleGroups }]));
 }
 
-function catalogExerciseFor(templateName: string, catalog: PlanningCatalogExercise[], catalogInfo: ExerciseCatalogInfo, restrictions: string[], excluded: Set<string>, seed: number) {
+function catalogExerciseFor(templateName: string, catalog: PlanningCatalogExercise[], catalogInfo: ExerciseCatalogInfo, restrictions: string[], trainingPlace: string, excluded: Set<string>, seed: number) {
   const templateGroups = exerciseCatalogInfo[templateName]?.muscleGroups ?? [];
   const desiredPrimary = templateGroups.map(primaryForMuscleGroup).find(Boolean);
   const candidates = catalog.filter((exercise) => {
     if (excluded.has(exercise.name)) return false;
     if (desiredPrimary && exercise.primaryMuscle !== desiredPrimary) return false;
+    const homeFriendly = exercise.equipment.every((item) => ["", "none_(bodyweight_exercise)", "dumbbell", "kettlebell", "resistance_band", "gym_mat", "bench"].includes(item));
+    if (trainingPlace === "Casa" && !homeFriendly) return false;
+    if (trainingPlace === "Gimnasio básico" && exercise.equipment.some((item) => ["cable_machine", "machine", "smith_machine", "pull-up_bar", "parallel_bars"].includes(item))) return false;
     return !exercise.restrictions.some((restriction) => restrictions.includes(restriction));
   });
   if (candidates.length === 0) return safeExerciseName(templateName, restrictions, excluded, catalogInfo);
@@ -206,7 +215,7 @@ export function generateInitialPlan(profile: PlanningProfile, catalog: PlanningC
   const preferredMealStyles = profile.preferredMealStyles ?? [];
   const mealsOutSlots = profile.mealsOutSlots ?? [];
   const bmr = 10 * profile.weightKg + 6.25 * profile.heightCm - 5 * profile.age + (profile.sex === "male" ? 5 : -161);
-  const calories = Math.max(profile.sex === "male" ? 1800 : 1500, Math.round((bmr * activityFactor(profile.experience, daysPerWeek) + goalAdjustment(profile.goal) + (profile.calorieAdjustment ?? 0)) / 10) * 10);
+  const calories = Math.max(profile.sex === "male" ? 1800 : 1500, Math.round((bmr * activityFactor(profile.experience, daysPerWeek, profile.dailyActivity) + goalAdjustment(profile.goal) + (profile.calorieAdjustment ?? 0)) / 10) * 10);
   const proteinGrams = Math.round(profile.weightKg * (profile.goal.includes("Perder") ? 2.1 : 1.8));
   const fatsGrams = Math.round(profile.weightKg * 0.9);
   const carbsGrams = Math.max(0, Math.round((calories - proteinGrams * 4 - fatsGrams * 9) / 4));
@@ -305,11 +314,11 @@ export function generateInitialPlan(profile: PlanningProfile, catalog: PlanningC
     return {
       name: template.name,
       exercises: template.exercises.slice(0, exerciseCount).map((name, exerciseIndex) => {
-        const catalogName = catalog.length > 0 ? catalogExerciseFor(name, catalog, catalogInfo, restrictions, usedInDay, index * exerciseCount + exerciseIndex + varietySeed) : name;
+        const catalogName = catalog.length > 0 ? catalogExerciseFor(name, catalog, catalogInfo, restrictions, profile.trainingPlace ?? "", usedInDay, index * exerciseCount + exerciseIndex + varietySeed) : name;
         const safeName = restrictions.length ? safeExerciseName(catalogName, restrictions, usedInDay, catalogInfo) : catalogName;
         usedInDay.add(safeName);
         const targetsPriority = priorities.length > 0 && (catalogInfo[safeName]?.muscleGroups ?? []).some((muscleGroup) => priorities.includes(muscleGroup));
-        const baseSets = profile.experience.includes("Nunca") ? 2 : 3;
+        const baseSets = profile.experience.includes("Nunca") || (profile.sleepHours ?? 8) < 6 ? 2 : 3;
         return {
           name: safeName,
           sets: targetsPriority ? Math.min(5, baseSets + 1) : baseSets, // extra volume for the muscle groups the user asked to prioritize
@@ -332,7 +341,10 @@ export function parsePlanningProfile(profile: Record<string, unknown>, calorieAd
     goal: String(profile.primary_goal),
     experience: String(profile.experience),
     daysPerWeek: numberFromText(String(profile.days_per_week ?? "3"), 3),
-    sessionMinutes: numberFromText(String(profile.session_duration ?? "60"), 60),
+    sessionMinutes: Number(profile.session_duration_minutes ?? profile.session_duration) || 60,
+    dailyActivity: String(profile.daily_activity ?? ""),
+    sleepHours: Number(profile.sleep_hours ?? 8),
+    trainingPlace: String(profile.training_place ?? ""),
     mealCount: Number(profile.meal_count ?? 4),
     dietPreference: String(profile.diet_preference ?? "Omnívoro"),
     calorieAdjustment,

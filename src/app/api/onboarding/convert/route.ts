@@ -107,6 +107,7 @@ export async function POST(request: Request) {
     const profile = {
       user_id: authData.user.id,
       name: textValue(authData.user.user_metadata?.name) || "Usuario Momentum",
+      motivation: textValue(values.get("motivation")) || null,
       sex: normalizeSex(values.get("sex")),
       age: numericValue(values.get("age")),
       height_cm: numericValue(values.get("height")),
@@ -169,7 +170,7 @@ export async function POST(request: Request) {
       .update({ status: "converted", converted_user_id: authData.user.id })
       .eq("id", session.id);
 
-    const response = NextResponse.json({ converted: true });
+    const response = NextResponse.json({ converted: true, planningMode: profile.workout_planning_mode });
     response.cookies.delete("momentum_onboarding_token");
     return response;
   } catch {

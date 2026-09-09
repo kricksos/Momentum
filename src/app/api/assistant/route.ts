@@ -21,7 +21,7 @@ export async function POST(request: Request) {
 
   const db = createAdminClient();
   const [{ data: profile }, { data: workoutPlan }, { data: nutritionPlan }, { data: measurements }] = await Promise.all([
-    db.from("profiles").select("name, primary_goal, experience, daily_activity, sleep_hours, stress_level, food_restrictions").eq("user_id", auth.user.id).maybeSingle(),
+    db.from("profiles").select("name, primary_goal, experience, daily_activity, sleep_hours, stress_level, food_restrictions, motivation").eq("user_id", auth.user.id).maybeSingle(),
     db.from("workout_plans").select("name, description").eq("user_id", auth.user.id).eq("active", true).maybeSingle(),
     db.from("nutrition_plans").select("name").eq("user_id", auth.user.id).eq("active", true).maybeSingle(),
     db.from("body_measurements").select("measured_at, weight_kg, waist_cm, chest_cm, arm_cm, thigh_cm").eq("user_id", auth.user.id).order("measured_at", { ascending: false }).limit(3),
@@ -35,6 +35,7 @@ export async function POST(request: Request) {
     actividadDiaria: profile?.daily_activity ?? "no definida",
     horasSueno: profile?.sleep_hours ?? "no definidas",
     estres: profile?.stress_level ?? "no definido",
+    motivacion: profile?.motivation ?? "no definida",
     rutina: workoutPlan ? { nombre: workoutPlan.name, descripcion: workoutPlan.description } : "no disponible",
     dieta: nutritionPlan?.name ?? "no disponible",
     restriccionesAlimentarias: dietaryRestrictions.length > 0 ? dietaryRestrictions : "ninguna",

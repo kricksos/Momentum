@@ -1060,6 +1060,7 @@ export type Database = {
           id: string
           meal_count: number
           meals_out_slots: Json
+          motivation: string | null
           name: string
           nutrition_plan_review_needed: boolean
           preferred_meal_styles: Json
@@ -1097,6 +1098,7 @@ export type Database = {
           id?: string
           meal_count?: number
           meals_out_slots?: Json
+          motivation?: string | null
           name: string
           nutrition_plan_review_needed?: boolean
           preferred_meal_styles?: Json
@@ -1134,6 +1136,7 @@ export type Database = {
           id?: string
           meal_count?: number
           meals_out_slots?: Json
+          motivation?: string | null
           name?: string
           nutrition_plan_review_needed?: boolean
           preferred_meal_styles?: Json

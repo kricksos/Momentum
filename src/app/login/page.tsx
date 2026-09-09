@@ -43,7 +43,7 @@ export default function LoginPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(sessionToken ? { sessionToken } : {}),
     });
-    const conversionResult = (await conversionResponse.json().catch(() => ({}))) as { converted?: boolean; error?: string };
+    const conversionResult = (await conversionResponse.json().catch(() => ({}))) as { converted?: boolean; planningMode?: "auto" | "manual"; error?: string };
 
     if (!conversionResponse.ok && conversionResponse.status !== 400) {
       setIsSubmitting(false);
@@ -56,7 +56,7 @@ export default function LoginPage() {
       window.sessionStorage.removeItem("momentum_onboarding_token");
     }
 
-    router.push("/dashboard");
+    router.push(conversionResult.converted && conversionResult.planningMode === "manual" ? "/workout/builder" : "/dashboard");
   }
 
   return (
