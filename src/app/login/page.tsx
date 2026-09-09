@@ -54,6 +54,15 @@ export default function LoginPage() {
 
     if (conversionResult.converted) {
       window.sessionStorage.removeItem("momentum_onboarding_token");
+      if (conversionResult.planningMode !== "manual") {
+        setStatus("Perfil guardado. Preparando tu rutina y tu dieta...");
+        const planResponse = await fetch("/api/plans/generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) });
+        if (!planResponse.ok) {
+          setIsSubmitting(false);
+          setStatus("Tu cuenta está confirmada, pero no hemos podido preparar todavía tu plan. Puedes intentarlo desde el dashboard.");
+          return;
+        }
+      }
     }
 
     router.push(conversionResult.converted && conversionResult.planningMode === "manual" ? "/workout/builder" : "/dashboard");

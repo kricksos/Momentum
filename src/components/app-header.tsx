@@ -9,7 +9,7 @@ type AppHeaderProps = { email: string; name: string; daysSinceLastMeasurement: n
 export function AppHeader({ email, name, daysSinceLastMeasurement, hasProfile, workoutLabel, workoutHref, workoutDue }: AppHeaderProps) {
   return (
     <header className="flex items-center justify-between">
-      <Link href="/dashboard" className="flex items-center gap-3">
+      <Link href="/" className="flex items-center gap-3" aria-label="Volver a la portada de Momentum">
         <span className="grid size-10 place-items-center rounded-xl bg-[#18231f] text-[#d7f36b]"><Sparkles size={18} /></span>
         <span className="font-semibold">Momentum</span>
       </Link>
