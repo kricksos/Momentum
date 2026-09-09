@@ -37,7 +37,8 @@ export default function LoginPage() {
       return;
     }
 
-    const sessionToken = window.sessionStorage.getItem("momentum_onboarding_token") ?? window.localStorage.getItem("momentum_onboarding_token");
+    const queryToken = new URLSearchParams(window.location.search).get("onboarding_token");
+    const sessionToken = queryToken ?? window.sessionStorage.getItem("momentum_onboarding_token") ?? window.localStorage.getItem("momentum_onboarding_token");
     const conversionResponse = await fetch("/api/onboarding/convert", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -48,7 +49,7 @@ export default function LoginPage() {
     if (!conversionResponse.ok && conversionResponse.status !== 400) {
       setIsSubmitting(false);
       setNeedsProfileRecovery(true);
-      setStatus("Has iniciado sesión, pero todavía tenemos que terminar de guardar tu perfil.");
+      setStatus(conversionResult.error ?? "Has iniciado sesión, pero todavía tenemos que terminar de guardar tu perfil.");
       return;
     }
 

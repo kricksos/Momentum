@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
+  const onboardingToken = requestUrl.searchParams.get("onboarding_token");
 
   if (code) {
     const supabase = await createClient();
@@ -17,5 +18,7 @@ export async function GET(request: Request) {
     return NextResponse.redirect(new URL(`/login?confirmed=0&error=${encodeURIComponent("El enlace de confirmación está incompleto o ha caducado.")}`, requestUrl.origin));
   }
 
-  return NextResponse.redirect(new URL("/login?confirmed=1", requestUrl.origin));
+  const loginUrl = new URL("/login?confirmed=1", requestUrl.origin);
+  if (onboardingToken) loginUrl.searchParams.set("onboarding_token", onboardingToken);
+  return NextResponse.redirect(loginUrl);
 }

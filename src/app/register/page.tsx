@@ -26,12 +26,15 @@ export default function RegisterPage() {
     setStatus(null);
 
     const supabase = createClient();
+    const onboardingToken = window.sessionStorage.getItem("momentum_onboarding_token") ?? window.localStorage.getItem("momentum_onboarding_token");
+    const confirmationUrl = new URL("/auth/callback", window.location.origin);
+    if (onboardingToken) confirmationUrl.searchParams.set("onboarding_token", onboardingToken);
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: { name, accepted_terms: true, consent_version: "1.0", consent_language: "es" },
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        emailRedirectTo: confirmationUrl.toString(),
       },
     });
 
