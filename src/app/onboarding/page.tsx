@@ -82,13 +82,6 @@ export default function OnboardingPage() {
       if (value === "Ninguna") {
         setAnswers((previous) => ({ ...previous, [question.key]: ["Ninguna"] }));
         return;
-      }
-      const selectedWithoutNone = selected.filter((item) => item !== "Ninguna");
-      const nextValue = selected.includes(String(value))
-        ? selectedWithoutNone.filter((item) => item !== String(value))
-        : [...selectedWithoutNone, String(value)];
-      setAnswers((previous) => ({ ...previous, [question.key]: nextValue }));
-      return;
     }
 
     setAnswers((previous) => ({ ...previous, [question.key]: value }));
@@ -175,9 +168,9 @@ export default function OnboardingPage() {
 
     return (
       <main className="min-h-screen bg-[#f4f1e9] px-5 py-6 text-[#18231f] sm:px-8 sm:py-8">
-        <div className="mx-auto flex min-h-[calc(100vh-3rem)] max-w-4xl flex-col">
-          <header className="flex items-center justify-between"><Link href="/" className="flex items-center gap-3" aria-label="Volver a Momentum"><span className="grid size-10 place-items-center rounded-xl bg-[#18231f] text-[#d7f36b]"><Sparkles size={18} /></span><span className="font-semibold">Momentum</span></Link><span className="text-sm text-[#68736b]">Perfil completado</span></header>
-          <section className="flex flex-1 flex-col justify-center py-12"><p className="text-sm font-semibold uppercase tracking-[0.16em] text-[#819078]">Tu punto de partida</p><h1 className="mt-5 max-w-2xl text-5xl font-semibold leading-tight tracking-[-0.06em] sm:text-7xl">Ya tenemos una dirección.</h1><p className="mt-5 max-w-xl text-lg leading-8 text-[#68736b]">Hemos reunido lo importante para preparar una propuesta que encaje contigo.</p><div className="mt-10 grid gap-3 sm:grid-cols-2">{summary.map(([label, value]) => <div key={label} className="rounded-2xl border border-[#d3dbcf] bg-[#f8f7f1] p-5"><p className="text-sm text-[#819078]">{label}</p><p className="mt-2 font-semibold">{Array.isArray(value) ? value.join(", ") : value || "Pendiente"}</p></div>)}</div><div className="mt-6 rounded-2xl bg-[#18231f] p-6 text-[#f6f4ed]"><p className="text-sm text-[#b9c2b7]">Siguiente paso</p><h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em]">Estamos preparando tu propuesta personalizada.</h2><p className="mt-3 max-w-lg leading-7 text-[#c8d0c5]">Verás una primera orientación de entrenamiento y nutrición antes de crear tu cuenta.</p><Link href="/preview" className="mt-6 inline-flex items-center rounded-full bg-[#d7f36b] px-5 py-3 text-sm font-semibold text-[#18231f]">Ver mi propuesta</Link></div></section>
+        <div className="mx-auto flex min-h-[calc(100vh-3rem)] max-w-5xl flex-col">
+          <header className="flex items-center justify-between"><Link href="/" className="flex items-center gap-3" aria-label="Volver a Momentum"><span className="grid size-10 place-items-center rounded-xl bg-[#18231f] text-[#d7f36b] shadow-[0_8px_20px_rgba(24,35,31,0.14)]"><Sparkles size={18} /></span><span className="font-semibold">Momentum</span></Link><span className="rounded-full border border-[#d3dbcf] bg-[#f8f7f1] px-3 py-1.5 text-sm text-[#68736b]">Perfil completado</span></header>
+          <section className="flex flex-1 flex-col justify-center py-12"><p className="text-sm font-semibold uppercase tracking-[0.16em] text-[#819078]">Tu punto de partida</p><h1 className="mt-5 max-w-2xl text-5xl font-semibold leading-tight tracking-[-0.06em] sm:text-7xl">Ya tenemos una dirección.</h1><p className="mt-5 max-w-xl text-lg leading-8 text-[#68736b]">Hemos reunido lo importante para preparar una propuesta que encaje contigo.</p><div className="mt-10 grid gap-3 sm:grid-cols-2">{summary.map(([label, value]) => <div key={label} className="rounded-2xl border border-[#d3dbcf] bg-[#f8f7f1] p-5 shadow-[0_10px_24px_rgba(50,65,49,0.04)]"><p className="text-sm text-[#819078]">{label}</p><p className="mt-2 font-semibold">{Array.isArray(value) ? value.join(", ") : value || "Pendiente"}</p></div>)}</div><div className="mt-6 rounded-2xl bg-[#18231f] p-6 text-[#f6f4ed] shadow-[0_20px_40px_rgba(24,35,31,0.16)]"><p className="text-sm text-[#b9c2b7]">Siguiente paso</p><h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em]">Desbloquea tu planificación completa.</h2><p className="mt-3 max-w-lg leading-7 text-[#c8d0c5]">La rutina, la dieta y el seguimiento estarán disponibles al crear tu cuenta gratuita.</p><Link href="/register" className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#d7f36b] px-5 py-3 text-sm font-semibold text-[#18231f]">Crear mi cuenta gratuita <ArrowRight size={16} /></Link></div></section>
         </div>
       </main>
     );
@@ -202,4 +195,5 @@ export default function OnboardingPage() {
       </div>
     </main>
   );
+}
 }
