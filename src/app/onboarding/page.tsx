@@ -31,6 +31,14 @@ const questions = [
 const optionalQuestionKeys = new Set(["target_weight"]);
 
 const optionDescriptions: Record<string, Record<string, string>> = {
+  goal: {
+    "Ganar masa muscular": "Aumentar músculo y fuerza de forma progresiva.",
+    "Perder grasa": "Reducir grasa corporal manteniendo el máximo rendimiento posible.",
+    "Recomposición corporal": "Mejorar tu composición corporal ganando músculo y perdiendo grasa.",
+    "Mantener peso": "Conservar tu peso mientras mejoras hábitos, fuerza y condición física.",
+    "Mejorar rendimiento": "Entrenar para moverte mejor, rendir más y sentirte más capaz.",
+    "Mejorar salud general": "Construir una base sostenible de movimiento, energía y bienestar.",
+  },
   training_place: {
     "Gimnasio completo": "Máquinas, poleas, barras, mancuernas y material variado.",
     "Gimnasio básico": "Mancuernas, barras y material esencial; sin depender de máquinas avanzadas.",
