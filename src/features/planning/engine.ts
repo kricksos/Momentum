@@ -219,8 +219,8 @@ export function generateInitialPlan(profile: PlanningProfile, catalog: PlanningC
   const proteinGrams = Math.round(profile.weightKg * (profile.goal.includes("Perder") ? 2.1 : 1.8));
   const fatsGrams = Math.round(profile.weightKg * 0.9);
   const carbsGrams = Math.max(0, Math.round((calories - proteinGrams * 4 - fatsGrams * 9) / 4));
-  const mealCount = Math.min(5, Math.max(3, profile.mealCount || 4));
-  const mealRatios = mealCount === 3 ? [0.3, 0.4, 0.3] : mealCount === 5 ? [0.2, 0.15, 0.3, 0.15, 0.2] : [0.25, 0.3, 0.15, 0.3];
+  const mealCount = Math.min(6, Math.max(3, profile.mealCount || 4));
+  const mealRatios = mealCount === 3 ? [0.3, 0.4, 0.3] : mealCount === 4 ? [0.25, 0.3, 0.15, 0.3] : mealCount === 5 ? [0.2, 0.15, 0.3, 0.15, 0.2] : [0.18, 0.12, 0.25, 0.12, 0.25, 0.08];
   const mealTargets = mealRatios.map((ratio) => Math.round(calories * ratio));
   const vegetarian = dietPreference.toLowerCase().includes("vegetariano");
   const vegan = dietPreference.toLowerCase().includes("vegano");
@@ -257,8 +257,9 @@ export function generateInitialPlan(profile: PlanningProfile, catalog: PlanningC
     { name: mealsOutSlots.includes("lunch") ? "Comida fuera de casa" : preferredMealStyles.includes("Bowls") ? "Bowl completo" : preferredMealStyles.includes("Ensaladas completas") ? "Ensalada completa" : "Comida", suggestedTime: "14:00", items: [{ name: lunchProtein, quantityGrams: Math.round(profile.weightKg * 2), role: proteinRole(lunchProtein), alternativeGroup: "protein" }, { name: lunchCarb, quantityGrams: Math.round(profile.weightKg * 2.2), role: "carbohydrate", alternativeGroup: "carb_base" }, { name: lunchVegetable, quantityGrams: 200, role: "vegetable", alternativeGroup: "vegetable" }, { name: lunchFat, quantityGrams: lunchFat === "Aceite de oliva" ? 10 : 45, role: "fat", alternativeGroup: "fat" }] },
     { name: mealsOutSlots.includes("afternoon_snack") ? "Merienda fuera de casa" : "Merienda", suggestedTime: "17:30", items: [{ name: snackProtein, quantityGrams: dairyProteins.has(snackProtein) ? 200 : 150, role: proteinRole(snackProtein), alternativeGroup: "protein" }, { name: snackCarb, quantityGrams: 180, role: "carbohydrate", alternativeGroup: "carb_base" }] },
     { name: mealsOutSlots.includes("dinner") ? "Cena fuera de casa" : "Cena", suggestedTime: "21:00", items: [{ name: dinnerProtein, quantityGrams: 160, role: proteinRole(dinnerProtein), alternativeGroup: "protein" }, { name: dinnerCarb, quantityGrams: 220, role: "carbohydrate", alternativeGroup: "carb_base" }, { name: dinnerVegetable, quantityGrams: 180, role: "vegetable", alternativeGroup: "vegetable" }, { name: dinnerFat, quantityGrams: dinnerFat === "Aceite de oliva" ? 10 : 45, role: "fat", alternativeGroup: "fat" }] },
+    { name: "Recena", suggestedTime: "23:00", items: [{ name: snackProtein, quantityGrams: dairyProteins.has(snackProtein) ? 180 : 100, role: proteinRole(snackProtein), alternativeGroup: "protein" }, { name: snackFruit, quantityGrams: 100, role: "fruit" }] },
   ];
-  const mealIndexes = mealCount === 3 ? [0, 2, 4] : mealCount === 4 ? [0, 2, 3, 4] : [0, 1, 2, 3, 4];
+  const mealIndexes = mealCount === 3 ? [0, 2, 4] : mealCount === 4 ? [0, 2, 3, 4] : mealCount === 5 ? [0, 1, 2, 3, 4] : [0, 1, 2, 3, 4, 5];
   const meals = mealIndexes.map((mealIndex, index) => {
     const meal = applyFoodRestrictions({ ...baseMeals[mealIndex], targetCalories: mealTargets[index], items: baseMeals[mealIndex].items.map((item) => ({ ...item, weightBasis: item.role === "carbohydrate" ? "cooked" as const : "as_served" as const })) }, foodRestrictions, dietPreference);
 

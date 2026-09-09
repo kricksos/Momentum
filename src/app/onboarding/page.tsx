@@ -23,7 +23,7 @@ const questions = [
   { key: "sleep", title: "¿Cuántas horas duermes normalmente?", description: "El descanso también forma parte del progreso.", type: "single_select", options: ["Menos de 5", "5 - 6", "6 - 7", "7 - 8", "Más de 8"] },
   { key: "diet", title: "¿Cómo definirías tu alimentación?", description: "No hay una respuesta correcta: buscamos que el plan sea realista.", type: "single_select", options: ["Omnívoro", "Vegetariano", "Vegano", "Otra"] },
   { key: "food_restrictions", title: "¿Tienes alergias o intolerancias alimentarias?", description: "Podemos adaptar la dieta para evitar alimentos que te hagan sentir peor.", type: "multi_select", options: foodRestrictionOptions },
-  { key: "meal_count", title: "¿Cuántas comidas puedes hacer al día?", description: "Distribuiremos tu dieta según el número de comidas que encaja de verdad con tu rutina.", type: "single_select", options: ["3 comidas", "4 comidas", "5 comidas"] },
+  { key: "meal_count", title: "¿Cuántas comidas puedes hacer al día?", description: "Distribuiremos tu dieta según el número de comidas que encaja de verdad con tu rutina.", type: "single_select", options: ["3 comidas", "4 comidas", "5 comidas", "6 comidas"] },
   { key: "injuries", title: "¿Tienes alguna lesión o limitación?", description: "La seguridad está por encima de cualquier objetivo.", type: "multi_select", options: injuryOptions },
   { key: "motivation", title: "¿Por qué quieres conseguir este objetivo?", description: "Esta respuesta nos ayudará a acompañarte de una forma más personal.", type: "text", placeholder: "Quiero sentirme..." },
 ] as const;

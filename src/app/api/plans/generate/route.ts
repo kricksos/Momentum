@@ -6,7 +6,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { generateInitialPlan, parsePlanningProfile } from "@/features/planning/engine";
 import { getPlanningExerciseCatalog } from "@/lib/exercise-catalog";
 
-const generateSchema = z.object({ mealCount: z.number().int().min(3).max(5).optional() }).default({});
+const generateSchema = z.object({ mealCount: z.number().int().min(3).max(6).optional() }).default({});
 
 export async function POST(request: Request) {
   const authClient = await createClient();

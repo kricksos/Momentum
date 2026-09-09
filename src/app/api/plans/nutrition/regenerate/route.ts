@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { generateInitialPlan, parsePlanningProfile } from "@/features/planning/engine";
 
-const requestSchema = z.object({ mealCount: z.number().int().min(3).max(5).optional() }).default({});
+const requestSchema = z.object({ mealCount: z.number().int().min(3).max(6).optional() }).default({});
 
 function errorMessage(error: unknown) {
   if (error instanceof Error) return error.message;
