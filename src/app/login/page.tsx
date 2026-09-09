@@ -43,6 +43,7 @@ export default function LoginPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(sessionToken ? { sessionToken } : {}),
     });
+    const conversionResult = (await conversionResponse.json().catch(() => ({}))) as { converted?: boolean; error?: string };
 
     if (!conversionResponse.ok && conversionResponse.status !== 400) {
       setIsSubmitting(false);
@@ -51,7 +52,7 @@ export default function LoginPage() {
       return;
     }
 
-    if (conversionResponse.ok) {
+    if (conversionResult.converted) {
       window.sessionStorage.removeItem("momentum_onboarding_token");
     }
 
