@@ -1,6 +1,7 @@
 import { ArrowRight, Check, Sparkles } from "lucide-react";
 import Link from "next/link";
 
+import { OnboardingPreparation } from "@/components/onboarding-preparation";
 import { createClient } from "@/lib/supabase/server";
 
 const highlights = [
@@ -14,6 +15,8 @@ export default async function PreviewPage() {
   const supabase = await createClient();
   const { data } = await supabase.auth.getUser();
   const isAuthenticated = Boolean(data.user);
+
+  return <OnboardingPreparation isAuthenticated={isAuthenticated} />;
 
   return (
     <main className="min-h-screen bg-[#f4f1e9] px-5 py-6 text-[#18231f] sm:px-8 sm:py-8">
