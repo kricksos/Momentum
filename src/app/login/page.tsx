@@ -3,7 +3,7 @@
 import { ArrowRight, LoaderCircle, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 
 import { createClient } from "@/lib/supabase/client";
 
@@ -14,6 +14,13 @@ export default function LoginPage() {
   const [needsProfileRecovery, setNeedsProfileRecovery] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const error = params.get("error");
+    if (error) setStatus(error);
+    else if (params.get("confirmed") === "1") setStatus("Email confirmado. Ya puedes iniciar sesión.");
+  }, []);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

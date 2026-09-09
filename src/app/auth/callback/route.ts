@@ -8,7 +8,13 @@ export async function GET(request: Request) {
 
   if (code) {
     const supabase = await createClient();
-    await supabase.auth.exchangeCodeForSession(code);
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    if (error) {
+      console.error("Unable to exchange Supabase confirmation code", error.message);
+      return NextResponse.redirect(new URL(`/login?confirmed=0&error=${encodeURIComponent("No se pudo confirmar el enlace. Solicita un correo nuevo e inténtalo otra vez.")}`, requestUrl.origin));
+    }
+  } else {
+    return NextResponse.redirect(new URL(`/login?confirmed=0&error=${encodeURIComponent("El enlace de confirmación está incompleto o ha caducado.")}`, requestUrl.origin));
   }
 
   return NextResponse.redirect(new URL("/login?confirmed=1", requestUrl.origin));
