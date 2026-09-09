@@ -35,7 +35,7 @@ export function OnboardingPreparation({ isAuthenticated }: Props) {
         }
         return current + 1;
       });
-    }, 800);
+    }, 1000);
 
     return () => window.clearInterval(timer);
   }, []);
