@@ -2,6 +2,7 @@
 
 import { ArrowLeft, ArrowRight, Check, LoaderCircle, Sparkles } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { foodRestrictionOptions } from "@/lib/food-restrictions";
@@ -50,6 +51,7 @@ const optionDescriptions: Record<string, Record<string, string>> = {
 type Answer = string | number | string[];
 
 export default function OnboardingPage() {
+  const router = useRouter();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, Answer>>({});
   const [sessionToken, setSessionToken] = useState<string | null>(null);
@@ -122,7 +124,7 @@ export default function OnboardingPage() {
     if (conversionResponse.ok) {
       window.sessionStorage.removeItem("momentum_onboarding_token");
     }
-    setIsComplete(true);
+    router.push("/preview");
   }
 
   async function goNext() {
