@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, LoaderCircle, ShieldCheck } from "lucide-react";
+import { ArrowRight, CheckCircle2, LoaderCircle, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { FormEvent, Suspense, useState } from "react";
@@ -13,6 +13,7 @@ function ResetPasswordForm() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [status, setStatus] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [passwordUpdated, setPasswordUpdated] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -39,8 +40,7 @@ function ResetPasswordForm() {
     }
 
     setStatus("Tu contraseña ha sido actualizada correctamente.");
-    setPassword("");
-    setConfirmPassword("");
+    setPasswordUpdated(true);
   }
 
   return (
@@ -53,7 +53,7 @@ function ResetPasswordForm() {
           <h1 className="mt-6 text-3xl font-semibold tracking-[-0.05em]">Nueva contraseña</h1>
           <p className="mt-3 text-base leading-7 text-[#68736b]">Crea una contraseña segura para volver a entrar en Momentum.</p>
 
-          <form onSubmit={handleSubmit} className="mt-7 space-y-4">
+          {passwordUpdated ? <section className="mt-7 rounded-2xl border border-[#d3dbcf] bg-white/70 p-5"><div className="flex items-start gap-3"><CheckCircle2 className="mt-0.5 shrink-0 text-[#72873f]" size={20} /><div><p className="font-semibold text-[#18231f]">Contraseña actualizada</p><p className="mt-2 text-sm leading-6 text-[#68736b]">Tu contraseña se ha cambiado correctamente. Ya puedes iniciar sesión con ella.</p></div></div><Link href="/login" className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#18231f] px-6 py-3.5 text-sm font-semibold text-[#f6f4ed]">Ir al login <ArrowRight size={17} /></Link></section> : <form onSubmit={handleSubmit} className="mt-7 space-y-4">
             <label className="block text-sm font-medium">
               Nueva contraseña
               <input
@@ -82,7 +82,7 @@ function ResetPasswordForm() {
             <button type="submit" disabled={isSubmitting} className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#18231f] px-6 py-3.5 text-sm font-semibold text-[#f6f4ed] disabled:opacity-50">
               {isSubmitting ? <LoaderCircle size={17} className="animate-spin" /> : <>Guardar contraseña <ArrowRight size={17} /></>}
             </button>
-          </form>
+          </form>}
 
           {searchParams.get("code") ? null : <p className="mt-5 text-sm text-[#68736b]">Este enlace se usa para recuperar la contraseña. Si acabas de recibirlo, puedes continuar con el cambio.</p>}
 
