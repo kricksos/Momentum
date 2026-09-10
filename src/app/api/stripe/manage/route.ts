@@ -22,14 +22,19 @@ export async function POST(request: Request) {
   try {
     const stripe = getStripeClient();
     const db = createAdminClient();
-    const { data: profile } = await db.from("profiles").select("subscription_renews_at").eq("user_id", auth.user.id).maybeSingle();
-    const customers = await stripe.customers.list({ email: auth.user.email, limit: 10 });
+    const { data: profile } = await db.from("profiles").select("subscription_renews_at, stripe_customer_id, stripe_subscription_id").eq("user_id", auth.user.id).maybeSingle();
     let subscription: Awaited<ReturnType<typeof stripe.subscriptions.list>>["data"][number] | undefined;
 
-    for (const customer of customers.data) {
-      const subscriptions = await stripe.subscriptions.list({ customer: customer.id, status: "all", limit: 10 });
-      subscription = subscriptions.data.find((item) => item.metadata.user_id === auth.user?.id && ["active", "trialing"].includes(item.status));
-      if (subscription) break;
+    if (profile?.stripe_subscription_id) {
+      const candidate = await stripe.subscriptions.retrieve(profile.stripe_subscription_id);
+      if (["active", "trialing"].includes(candidate.status)) subscription = candidate;
+    } else {
+      const customers = await stripe.customers.list({ email: auth.user.email, limit: 10 });
+      for (const customer of customers.data) {
+        const subscriptions = await stripe.subscriptions.list({ customer: customer.id, status: "all", limit: 10 });
+        subscription = subscriptions.data.find((item) => item.metadata.user_id === auth.user?.id && ["active", "trialing"].includes(item.status));
+        if (subscription) break;
+      }
     }
 
     if (!subscription) {

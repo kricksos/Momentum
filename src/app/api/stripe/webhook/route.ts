@@ -28,6 +28,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid signature." }, { status: 400 });
   }
 
+  const db = createAdminClient();
+  const { data: existingEvent, error: eventLookupError } = await db.from("stripe_webhook_events").select("processed").eq("id", event.id).maybeSingle();
+  if (eventLookupError) return NextResponse.json({ error: "Unable to inspect webhook event." }, { status: 500 });
+  if (existingEvent?.processed) return NextResponse.json({ ok: true, duplicate: true });
+  if (!existingEvent) {
+    const { error: eventInsertError } = await db.from("stripe_webhook_events").insert({ id: event.id, event_type: event.type });
+    if (eventInsertError && eventInsertError.code !== "23505") return NextResponse.json({ error: "Unable to register webhook event." }, { status: 500 });
+  }
+
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
     const userId = session.metadata?.user_id;
@@ -45,13 +54,16 @@ export async function POST(request: Request) {
     if (normalizedPlan === "quarterly") renewalDate?.setUTCMonth(renewalDate.getUTCMonth() + 3);
     if (normalizedPlan === "annual") renewalDate?.setUTCFullYear(renewalDate.getUTCFullYear() + 1);
 
-    const db = createAdminClient();
+    const customerId = typeof session.customer === "string" ? session.customer : null;
+    const subscriptionId = typeof session.subscription === "string" ? session.subscription : null;
     const { error } = await db.from("profiles").update({
       subscription_plan: normalizedPlan,
       subscription_status: "active",
       subscription_started_at: startedAt.toISOString(),
       subscription_renews_at: renewalDate ? renewalDate.toISOString() : null,
       subscription_auto_renew: true,
+      stripe_customer_id: customerId,
+      stripe_subscription_id: subscriptionId,
       updated_at: new Date().toISOString(),
     }).eq("user_id", userId);
 
@@ -84,6 +96,8 @@ export async function POST(request: Request) {
       subscription_status: isDeleted ? "cancelled" : currentStatus === "active" ? "active" : "cancelled",
       ...(periodEnd ? { subscription_renews_at: periodEnd } : {}),
       subscription_auto_renew: !isDeleted && !subscription.cancel_at_period_end && currentStatus === "active",
+      stripe_customer_id: typeof subscription.customer === "string" ? subscription.customer : undefined,
+      stripe_subscription_id: isDeleted ? null : subscription.id,
       updated_at: new Date().toISOString(),
     }).eq("user_id", userId);
     if (subscriptionUpdateError) {
@@ -91,6 +105,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: false }, { status: 500 });
     }
   }
+
+  const { error: eventProcessedError } = await db.from("stripe_webhook_events").update({ processed: true, processed_at: new Date().toISOString() }).eq("id", event.id);
+  if (eventProcessedError) return NextResponse.json({ error: "Unable to mark webhook event as processed." }, { status: 500 });
 
   return NextResponse.json({ ok: true });
 }

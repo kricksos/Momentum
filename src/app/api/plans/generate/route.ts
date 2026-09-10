@@ -16,9 +16,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Authentication required." }, { status: 401 });
   }
 
+  let supabase: ReturnType<typeof createAdminClient> | null = null;
+  let generationRunId: string | null = null;
+  let workoutPlanId: string | null = null;
+  let nutritionPlanId: string | null = null;
+
   try {
     const body = generateSchema.parse(await request.json().catch(() => ({})));
-    const supabase = createAdminClient();
+    supabase = createAdminClient();
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("*")
@@ -95,6 +100,7 @@ export async function POST(request: Request) {
       .single();
 
     if (runError || !run) return NextResponse.json({ error: "Unable to start plan generation." }, { status: 500 });
+    generationRunId = run.id;
 
     const { error: decisionError } = await supabase.from("plan_rule_decisions").insert([
       { generation_run_id: run.id, rule_name: "structure_selection", input_data: { days: profile.days_per_week, experience: profile.experience }, output_data: { structure: generatedPlan.structure } },
@@ -108,6 +114,7 @@ export async function POST(request: Request) {
       .select("id")
       .single();
     if (workoutPlanError || !workoutPlan) throw workoutPlanError ?? new Error("Unable to create workout plan.");
+    workoutPlanId = workoutPlan.id;
 
     const { data: workoutVersion, error: workoutVersionError } = await supabase
       .from("workout_plan_versions")
@@ -148,6 +155,7 @@ export async function POST(request: Request) {
       .select("id")
       .single();
     if (nutritionPlanError || !nutritionPlan) throw nutritionPlanError ?? new Error("Unable to create nutrition plan.");
+    nutritionPlanId = nutritionPlan.id;
 
     const { data: nutritionVersion, error: nutritionVersionError } = await supabase.from("nutrition_plan_versions").insert({
       nutrition_plan_id: nutritionPlan.id,
@@ -196,6 +204,11 @@ export async function POST(request: Request) {
     await supabase.from("plan_generation_runs").update({ status: "completed", completed_at: new Date().toISOString() }).eq("id", run.id);
     return NextResponse.json({ generated: true, structure: generatedPlan.structure });
   } catch (error) {
+    if (supabase) {
+      if (nutritionPlanId) await supabase.from("nutrition_plans").delete().eq("id", nutritionPlanId);
+      if (workoutPlanId) await supabase.from("workout_plans").delete().eq("id", workoutPlanId);
+      if (generationRunId) await supabase.from("plan_generation_runs").update({ status: "failed", completed_at: new Date().toISOString(), error_message: error instanceof Error ? error.message : "Unknown generation error" }).eq("id", generationRunId);
+    }
     console.error("Unable to generate initial plan", error instanceof Error ? error.message : "Unknown error");
     return NextResponse.json({ error: "Unable to generate initial plan." }, { status: 500 });
   }

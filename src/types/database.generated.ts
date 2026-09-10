@@ -1087,6 +1087,8 @@ export type Database = {
           subscription_renews_at: string | null
           subscription_started_at: string | null
           subscription_status: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
           target_weight_kg: number | null
           training_place: string | null
           updated_at: string
@@ -1125,6 +1127,8 @@ export type Database = {
           subscription_renews_at?: string | null
           subscription_started_at?: string | null
           subscription_status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
           target_weight_kg?: number | null
           training_place?: string | null
           updated_at?: string
@@ -1163,6 +1167,8 @@ export type Database = {
           subscription_renews_at?: string | null
           subscription_started_at?: string | null
           subscription_status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
           target_weight_kg?: number | null
           training_place?: string | null
           updated_at?: string
@@ -1530,6 +1536,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      },
+      stripe_webhook_events: {
+        Row: {
+          event_type: string
+          id: string
+          processed: boolean
+          processed_at: string | null
+          received_at: string
+        }
+        Insert: {
+          event_type: string
+          id: string
+          processed?: boolean
+          processed_at?: string | null
+          received_at?: string
+        }
+        Update: {
+          event_type?: string
+          id?: string
+          processed?: boolean
+          processed_at?: string | null
+          received_at?: string
+        }
+        Relationships: []
       }
     }
     Views: {
