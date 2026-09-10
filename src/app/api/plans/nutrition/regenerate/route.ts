@@ -19,7 +19,7 @@ export async function POST(request: Request) {
   if (!authData.user) return NextResponse.json({ error: "Authentication required." }, { status: 401 });
 
   const parsed = requestSchema.safeParse(await request.json());
-  if (!parsed.success) return NextResponse.json({ error: "Meal count must be 3, 4 or 5." }, { status: 400 });
+  if (!parsed.success) return NextResponse.json({ error: "Meal count must be between 3 and 6." }, { status: 400 });
 
   try {
     const supabase = createAdminClient();

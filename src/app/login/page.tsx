@@ -18,8 +18,10 @@ export default function LoginPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const error = params.get("error");
-    if (error) setStatus(error);
-    else if (params.get("confirmed") === "1") setStatus("Email confirmado. Ya puedes iniciar sesión.");
+    const message = error ?? (params.get("confirmed") === "1" ? "Email confirmado. Ya puedes iniciar sesión." : null);
+    if (!message) return;
+    const timer = window.setTimeout(() => setStatus(message), 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -46,7 +48,7 @@ export default function LoginPage() {
     });
     const conversionResult = (await conversionResponse.json().catch(() => ({}))) as { converted?: boolean; planningMode?: "auto" | "manual"; error?: string };
 
-    if (!conversionResponse.ok && conversionResponse.status !== 400) {
+    if (!conversionResponse.ok) {
       setIsSubmitting(false);
       setNeedsProfileRecovery(true);
       setStatus(conversionResult.error ?? "Has iniciado sesión, pero todavía tenemos que terminar de guardar tu perfil.");

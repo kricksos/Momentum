@@ -79,7 +79,11 @@ export async function POST(request: Request) {
       : await sessionQuery.eq("auth_user_id", authData.user.id).order("started_at", { ascending: false }).limit(1).maybeSingle();
 
     if (sessionError || !session || (session.auth_user_id && session.auth_user_id !== authData.user.id) || new Date(session.expires_at) <= new Date()) {
-      return NextResponse.json({ error: "Onboarding session is invalid or expired." }, { status: 401 });
+      if (!sessionToken) {
+        const { data: existingProfile } = await supabase.from("profiles").select("user_id").eq("user_id", authData.user.id).maybeSingle();
+        if (existingProfile) return NextResponse.json({ converted: false, profileExists: true });
+      }
+      return NextResponse.json({ error: "Onboarding session is invalid or expired." }, { status: sessionToken ? 401 : 409 });
     }
 
     const { data: answers, error: answersError } = await supabase
@@ -125,10 +129,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "The onboarding profile is incomplete." }, { status: 400 });
     }
 
-    await supabase.from("user_consents").insert([
+    const { error: consentsError } = await supabase.from("user_consents").insert([
       { user_id: authData.user.id, consent_type: "privacy_policy", accepted: true, document_version: textValue(authData.user.user_metadata?.consent_version) || "1.0", language: textValue(authData.user.user_metadata?.consent_language) || "es" },
       { user_id: authData.user.id, consent_type: "terms_conditions", accepted: true, document_version: textValue(authData.user.user_metadata?.consent_version) || "1.0", language: textValue(authData.user.user_metadata?.consent_language) || "es" },
     ]);
+    if (consentsError) return NextResponse.json({ error: "Unable to save required consents." }, { status: 500 });
 
     const { error: profileError } = await supabase
       .from("profiles")
@@ -151,7 +156,8 @@ export async function POST(request: Request) {
       .limit(1)
       .maybeSingle();
     if (!existingMeasurement) {
-      await supabase.from("body_measurements").insert({ user_id: authData.user.id, weight_kg: profile.current_weight_kg });
+      const { error: measurementError } = await supabase.from("body_measurements").insert({ user_id: authData.user.id, weight_kg: profile.current_weight_kg });
+      if (measurementError) return NextResponse.json({ error: "Unable to save initial measurement." }, { status: 500 });
     }
 
     await supabase

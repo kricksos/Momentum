@@ -79,13 +79,17 @@ export async function POST(request: Request) {
       : undefined;
     const isDeleted = event.type === "customer.subscription.deleted";
 
-    await db.from("profiles").update({
+    const { error: subscriptionUpdateError } = await db.from("profiles").update({
       subscription_plan: isDeleted ? "free" : normalizedPlan,
       subscription_status: isDeleted ? "cancelled" : currentStatus === "active" ? "active" : "cancelled",
       ...(periodEnd ? { subscription_renews_at: periodEnd } : {}),
       subscription_auto_renew: !isDeleted && !subscription.cancel_at_period_end && currentStatus === "active",
       updated_at: new Date().toISOString(),
     }).eq("user_id", userId);
+    if (subscriptionUpdateError) {
+      console.error("Unable to sync subscription update from Stripe webhook", subscriptionUpdateError);
+      return NextResponse.json({ ok: false }, { status: 500 });
+    }
   }
 
   return NextResponse.json({ ok: true });

@@ -72,8 +72,12 @@ export async function POST(request: Request) {
         return NextResponse.json({ generated: false, reason: "active_plan_exists" });
       }
 
-      await supabase.from("workout_plans").delete().eq("id", existingPlan.id);
-      if (existingNutrition) await supabase.from("nutrition_plans").delete().eq("id", existingNutrition.id);
+      const { error: workoutDeleteError } = await supabase.from("workout_plans").delete().eq("id", existingPlan.id);
+      if (workoutDeleteError) throw workoutDeleteError;
+      if (existingNutrition) {
+        const { error: nutritionDeleteError } = await supabase.from("nutrition_plans").delete().eq("id", existingNutrition.id);
+        if (nutritionDeleteError) throw nutritionDeleteError;
+      }
     }
 
     const profileWithMealCount = { ...profile, meal_count: body.mealCount ?? profile.meal_count ?? 4 };
