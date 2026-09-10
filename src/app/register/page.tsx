@@ -29,7 +29,7 @@ export default function RegisterPage() {
     const onboardingToken = window.sessionStorage.getItem("momentum_onboarding_token") ?? window.localStorage.getItem("momentum_onboarding_token");
     const confirmationUrl = new URL("/auth/callback", window.location.origin);
     if (onboardingToken) confirmationUrl.searchParams.set("onboarding_token", onboardingToken);
-    const { error } = await supabase.auth.signUp({
+    const { data: signUpData, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -42,6 +42,14 @@ export default function RegisterPage() {
     if (error) {
       setStatus("No hemos podido crear tu cuenta. Comprueba los datos e inténtalo de nuevo.");
       return;
+    }
+
+    if (onboardingToken && signUpData.user?.id) {
+      await fetch("/api/onboarding/bind", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionToken: onboardingToken, userId: signUpData.user.id }),
+      });
     }
 
     setAccountCreated(true);
