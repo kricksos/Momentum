@@ -70,6 +70,10 @@ export async function POST(request: Request) {
 
   try {
     const supabase = createAdminClient();
+    const { data: existingProfile, error: existingProfileError } = await supabase.from("profiles").select("user_id").eq("user_id", authData.user.id).maybeSingle();
+    if (existingProfileError) return NextResponse.json({ error: "Unable to check existing profile." }, { status: 500 });
+    if (existingProfile) return NextResponse.json({ converted: false, profileExists: true });
+
     const sessionQuery = supabase
       .from("onboarding_sessions")
       .select("id, status, expires_at, auth_user_id")
@@ -79,10 +83,6 @@ export async function POST(request: Request) {
       : await sessionQuery.eq("auth_user_id", authData.user.id).order("started_at", { ascending: false }).limit(1).maybeSingle();
 
     if (sessionError || !session || (session.auth_user_id && session.auth_user_id !== authData.user.id) || new Date(session.expires_at) <= new Date()) {
-      if (!sessionToken) {
-        const { data: existingProfile } = await supabase.from("profiles").select("user_id").eq("user_id", authData.user.id).maybeSingle();
-        if (existingProfile) return NextResponse.json({ converted: false, profileExists: true });
-      }
       return NextResponse.json({ error: "Onboarding session is invalid or expired." }, { status: sessionToken ? 401 : 409 });
     }
 
