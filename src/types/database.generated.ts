@@ -930,6 +930,7 @@ export type Database = {
       }
       onboarding_sessions: {
         Row: {
+          auth_user_id: string | null
           completed_at: string | null
           converted_user_id: string | null
           expires_at: string
@@ -939,6 +940,7 @@ export type Database = {
           status: Database["public"]["Enums"]["onboarding_session_status"]
         }
         Insert: {
+          auth_user_id?: string | null
           completed_at?: string | null
           converted_user_id?: string | null
           expires_at?: string
@@ -948,6 +950,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["onboarding_session_status"]
         }
         Update: {
+          auth_user_id?: string | null
           completed_at?: string | null
           converted_user_id?: string | null
           expires_at?: string
@@ -957,6 +960,13 @@ export type Database = {
           status?: Database["public"]["Enums"]["onboarding_session_status"]
         }
         Relationships: [
+          {
+            foreignKeyName: "onboarding_sessions_auth_user_id_fkey"
+            columns: ["auth_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "onboarding_sessions_converted_user_id_fkey"
             columns: ["converted_user_id"]

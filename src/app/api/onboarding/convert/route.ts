@@ -68,24 +68,17 @@ export async function POST(request: Request) {
   const cookieStore = await cookies();
   const sessionToken = parsedBody.data.sessionToken ?? cookieStore.get("momentum_onboarding_token")?.value;
 
-  if (!sessionToken) {
-    return NextResponse.json({ error: "No pending onboarding session found." }, { status: 400 });
-  }
-
-  const sessionTokenHash = createHash("sha256")
-    .update(sessionToken)
-    .digest("hex");
-
   try {
     const supabase = createAdminClient();
-    const { data: session, error: sessionError } = await supabase
+    const sessionQuery = supabase
       .from("onboarding_sessions")
-      .select("id, status, expires_at")
-      .eq("session_token_hash", sessionTokenHash)
-      .in("status", ["completed", "converted"])
-      .single();
+      .select("id, status, expires_at, auth_user_id")
+      .eq("status", "completed");
+    const { data: session, error: sessionError } = sessionToken
+      ? await sessionQuery.eq("session_token_hash", createHash("sha256").update(sessionToken).digest("hex")).maybeSingle()
+      : await sessionQuery.eq("auth_user_id", authData.user.id).order("started_at", { ascending: false }).limit(1).maybeSingle();
 
-    if (sessionError || !session || new Date(session.expires_at) <= new Date()) {
+    if (sessionError || !session || (session.auth_user_id && session.auth_user_id !== authData.user.id) || new Date(session.expires_at) <= new Date()) {
       return NextResponse.json({ error: "Onboarding session is invalid or expired." }, { status: 401 });
     }
 
