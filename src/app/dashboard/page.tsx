@@ -409,6 +409,7 @@ export default async function DashboardPage() {
       "Crema de cacahuete",
       "Semillas de chía",
     ],
+    fruit: ["Platano", "Manzana", "Naranja", "Kiwi", "Frutos rojos", "Piña"],
   };
   const safeAlternatives = Object.fromEntries(
     Object.entries(alternatives).map(([group, foods]) => [
