@@ -221,7 +221,7 @@ export function generateInitialPlan(profile: PlanningProfile, catalog: PlanningC
   const carbsGrams = Math.max(0, Math.round((calories - proteinGrams * 4 - fatsGrams * 9) / 4));
   const mealCount = Math.min(6, Math.max(3, profile.mealCount || 4));
   const mealRatios = mealCount === 3 ? [0.3, 0.4, 0.3] : mealCount === 4 ? [0.25, 0.3, 0.15, 0.3] : mealCount === 5 ? [0.2, 0.15, 0.3, 0.15, 0.2] : [0.18, 0.12, 0.25, 0.12, 0.25, 0.08];
-  const mealTargets = mealRatios.map((ratio) => Math.round(calories * ratio));
+  const baseMealTargets = mealRatios.map((ratio) => Math.round(calories * ratio));
   const vegetarian = dietPreference.toLowerCase().includes("vegetariano");
   const vegan = dietPreference.toLowerCase().includes("vegano");
   const varietySeed = Math.round(profile.age * 7 + profile.weightKg * 3 + mealCount * 11 + (profile.goal.includes("Perder") ? 5 : 0));
@@ -251,15 +251,52 @@ export function generateInitialPlan(profile: PlanningProfile, catalog: PlanningC
   const dinnerFat = preferredFood(fats, foodRestrictions, dietPreference, dislikedFoods, varietySeed + 4);
   const dairyProteins = new Set(["Yogur griego", "Skyr natural"]);
   const proteinRole = (food: string) => dairyProteins.has(food) ? "dairy" as const : "protein" as const;
+  const outsideProteinOptions = vegan
+    ? ["Tofu firme", "Tempeh", "Garbanzos cocidos"]
+    : vegetarian
+      ? ["Huevos", "Tofu firme", "Tempeh", "Yogur griego", "Skyr natural"]
+      : ["Pavo", "Atún al natural", "Pechuga de pollo", "Yogur griego", "Skyr natural"];
+  const outsideCarbOptions = ["Pan integral", "Tortitas de arroz", "Avena", "Quinoa cocida"];
+  const outsideVegetableOptions = ["Tomate", "Zanahoria", "Espinaca", "Calabacín"];
+  const outsideFatOptions = ["Aguacate", "Almendras", "Crema de cacahuete", "Semillas de chía"];
+  const outsideFruit = (seed: number) => preferredFood(fruits, foodRestrictions, dietPreference, dislikedFoods, seed);
+  const outsideProtein = (seed: number) => preferredFood(outsideProteinOptions, foodRestrictions, dietPreference, dislikedFoods, seed);
+  const outsideCarb = (seed: number) => preferredFood(outsideCarbOptions, foodRestrictions, dietPreference, dislikedFoods, seed);
+  const outsideVegetable = (seed: number) => preferredFood(outsideVegetableOptions, foodRestrictions, dietPreference, dislikedFoods, seed);
+  const outsideFat = (seed: number) => preferredFood(outsideFatOptions, foodRestrictions, dietPreference, dislikedFoods, seed);
+  const portableItems = (slot: string, seed: number) => {
+    if (slot === "breakfast") return [
+      { name: outsideCarb(seed), quantityGrams: 70, role: "carbohydrate", alternativeGroup: "carb_base" },
+      { name: outsideProtein(seed + 1), quantityGrams: 120, role: proteinRole(outsideProtein(seed + 1)), alternativeGroup: "protein" },
+      { name: outsideFruit(seed + 2), quantityGrams: 120, role: "fruit", alternativeGroup: "fruit" },
+    ];
+    if (slot === "lunch") return [
+      { name: outsideProtein(seed), quantityGrams: 140, role: proteinRole(outsideProtein(seed)), alternativeGroup: "protein" },
+      { name: outsideCarb(seed + 1), quantityGrams: 80, role: "carbohydrate", alternativeGroup: "carb_base" },
+      { name: outsideVegetable(seed + 2), quantityGrams: 140, role: "vegetable", alternativeGroup: "vegetable" },
+      { name: outsideFruit(seed + 3), quantityGrams: 120, role: "fruit", alternativeGroup: "fruit" },
+    ];
+    return [
+      { name: outsideProtein(seed), quantityGrams: 120, role: proteinRole(outsideProtein(seed)), alternativeGroup: "protein" },
+      { name: outsideCarb(seed + 1), quantityGrams: 60, role: "carbohydrate", alternativeGroup: "carb_base" },
+      { name: outsideFruit(seed + 2), quantityGrams: 120, role: "fruit", alternativeGroup: "fruit" },
+      { name: outsideFat(seed + 3), quantityGrams: 25, role: "fat", alternativeGroup: "fat" },
+    ];
+  };
   const baseMeals = [
-    { name: mealsOutSlots.includes("breakfast") ? "Desayuno fuera de casa" : preferredMealStyles.includes("Desayunos salados") ? "Desayuno salado" : "Desayuno", suggestedTime: "08:00", items: [{ name: breakfastCarb, quantityGrams: Math.max(40, Math.round(profile.weightKg * 0.8)), role: "carbohydrate", alternativeGroup: "carb_base" }, { name: breakfastProtein, quantityGrams: dairyProteins.has(breakfastProtein) ? 200 : 120, role: proteinRole(breakfastProtein), alternativeGroup: "protein" }, { name: breakfastFruit, quantityGrams: 120, role: "fruit", alternativeGroup: "fruit" }] },
-    { name: mealsOutSlots.includes("mid_morning") ? "Media mañana fuera de casa" : "Media mañana", suggestedTime: "11:00", items: [{ name: snackProtein, quantityGrams: 120, role: proteinRole(snackProtein), alternativeGroup: "protein" }, { name: snackFruit, quantityGrams: 150, role: "fruit", alternativeGroup: "fruit" }] },
-    { name: mealsOutSlots.includes("lunch") ? "Comida fuera de casa" : preferredMealStyles.includes("Bowls") ? "Bowl completo" : preferredMealStyles.includes("Ensaladas completas") ? "Ensalada completa" : "Comida", suggestedTime: "14:00", items: [{ name: lunchProtein, quantityGrams: Math.round(profile.weightKg * 2), role: proteinRole(lunchProtein), alternativeGroup: "protein" }, { name: lunchCarb, quantityGrams: Math.round(profile.weightKg * 2.2), role: "carbohydrate", alternativeGroup: "carb_base" }, { name: lunchVegetable, quantityGrams: 200, role: "vegetable", alternativeGroup: "vegetable" }, { name: lunchFat, quantityGrams: lunchFat === "Aceite de oliva" ? 10 : 45, role: "fat", alternativeGroup: "fat" }] },
-    { name: mealsOutSlots.includes("afternoon_snack") ? "Merienda fuera de casa" : "Merienda", suggestedTime: "17:30", items: [{ name: snackProtein, quantityGrams: dairyProteins.has(snackProtein) ? 200 : 150, role: proteinRole(snackProtein), alternativeGroup: "protein" }, { name: snackCarb, quantityGrams: 180, role: "carbohydrate", alternativeGroup: "carb_base" }] },
-    { name: mealsOutSlots.includes("dinner") ? "Cena fuera de casa" : "Cena", suggestedTime: "21:00", items: [{ name: dinnerProtein, quantityGrams: 160, role: proteinRole(dinnerProtein), alternativeGroup: "protein" }, { name: dinnerCarb, quantityGrams: 220, role: "carbohydrate", alternativeGroup: "carb_base" }, { name: dinnerVegetable, quantityGrams: 180, role: "vegetable", alternativeGroup: "vegetable" }, { name: dinnerFat, quantityGrams: dinnerFat === "Aceite de oliva" ? 10 : 45, role: "fat", alternativeGroup: "fat" }] },
+    { name: mealsOutSlots.includes("breakfast") ? "Desayuno fuera de casa" : preferredMealStyles.includes("Desayunos salados") ? "Desayuno salado" : "Desayuno", suggestedTime: "08:00", items: mealsOutSlots.includes("breakfast") ? portableItems("breakfast", varietySeed) : [{ name: breakfastCarb, quantityGrams: Math.max(40, Math.round(profile.weightKg * 0.8)), role: "carbohydrate", alternativeGroup: "carb_base" }, { name: breakfastProtein, quantityGrams: dairyProteins.has(breakfastProtein) ? 200 : 120, role: proteinRole(breakfastProtein), alternativeGroup: "protein" }, { name: breakfastFruit, quantityGrams: 120, role: "fruit", alternativeGroup: "fruit" }] },
+    { name: mealsOutSlots.includes("mid_morning") ? "Media mañana fuera de casa" : "Media mañana", suggestedTime: "11:00", items: mealsOutSlots.includes("mid_morning") ? portableItems("snack", varietySeed + 1) : [{ name: snackProtein, quantityGrams: 120, role: proteinRole(snackProtein), alternativeGroup: "protein" }, { name: snackFruit, quantityGrams: 150, role: "fruit", alternativeGroup: "fruit" }] },
+    { name: mealsOutSlots.includes("lunch") ? "Comida fuera de casa" : preferredMealStyles.includes("Bowls") ? "Bowl completo" : preferredMealStyles.includes("Ensaladas completas") ? "Ensalada completa" : "Comida", suggestedTime: "14:00", items: mealsOutSlots.includes("lunch") ? portableItems("lunch", varietySeed + 2) : [{ name: lunchProtein, quantityGrams: Math.round(profile.weightKg * 2), role: proteinRole(lunchProtein), alternativeGroup: "protein" }, { name: lunchCarb, quantityGrams: Math.round(profile.weightKg * 2.2), role: "carbohydrate", alternativeGroup: "carb_base" }, { name: lunchVegetable, quantityGrams: 200, role: "vegetable", alternativeGroup: "vegetable" }, { name: lunchFat, quantityGrams: lunchFat === "Aceite de oliva" ? 10 : 45, role: "fat", alternativeGroup: "fat" }] },
+    { name: mealsOutSlots.includes("afternoon_snack") ? "Merienda fuera de casa" : "Merienda", suggestedTime: "17:30", items: mealsOutSlots.includes("afternoon_snack") ? portableItems("snack", varietySeed + 3) : [{ name: snackProtein, quantityGrams: dairyProteins.has(snackProtein) ? 200 : 150, role: proteinRole(snackProtein), alternativeGroup: "protein" }, { name: snackCarb, quantityGrams: 180, role: "carbohydrate", alternativeGroup: "carb_base" }] },
+    { name: mealsOutSlots.includes("dinner") ? "Cena fuera de casa" : "Cena", suggestedTime: "21:00", items: mealsOutSlots.includes("dinner") ? portableItems("dinner", varietySeed + 4) : [{ name: dinnerProtein, quantityGrams: 160, role: proteinRole(dinnerProtein), alternativeGroup: "protein" }, { name: dinnerCarb, quantityGrams: 220, role: "carbohydrate", alternativeGroup: "carb_base" }, { name: dinnerVegetable, quantityGrams: 180, role: "vegetable", alternativeGroup: "vegetable" }, { name: dinnerFat, quantityGrams: dinnerFat === "Aceite de oliva" ? 10 : 45, role: "fat", alternativeGroup: "fat" }] },
     { name: "Recena", suggestedTime: "23:00", items: [{ name: snackProtein, quantityGrams: dairyProteins.has(snackProtein) ? 180 : 100, role: proteinRole(snackProtein), alternativeGroup: "protein" }, { name: snackFruit, quantityGrams: 100, role: "fruit", alternativeGroup: "fruit" }] },
   ];
   const mealIndexes = mealCount === 3 ? [0, 2, 4] : mealCount === 4 ? [0, 2, 3, 4] : mealCount === 5 ? [0, 1, 2, 3, 4] : [0, 1, 2, 3, 4, 5];
+  const outsideSlotByMealIndex = ["breakfast", "mid_morning", "lunch", "afternoon_snack", "dinner", ""];
+  const outsideIndexes = new Set(mealIndexes.map((mealIndex, index) => mealsOutSlots.includes(outsideSlotByMealIndex[mealIndex]) ? index : -1).filter((index) => index >= 0));
+  const homeIndexes = mealIndexes.map((_, index) => index).filter((index) => !outsideIndexes.has(index));
+  const caloriesMovedFromOutside = [...outsideIndexes].reduce((total, index) => total + Math.round(baseMealTargets[index] * 0.2), 0);
+  const mealTargets = baseMealTargets.map((target, index) => outsideIndexes.has(index) ? Math.round(target * 0.8) : target + (homeIndexes.length ? Math.round(caloriesMovedFromOutside / homeIndexes.length) : 0));
   const meals = mealIndexes.map((mealIndex, index) => {
     const meal = applyFoodRestrictions({ ...baseMeals[mealIndex], targetCalories: mealTargets[index], items: baseMeals[mealIndex].items.map((item) => ({ ...item, weightBasis: item.role === "carbohydrate" ? "cooked" as const : "as_served" as const })) }, foodRestrictions, dietPreference);
 
