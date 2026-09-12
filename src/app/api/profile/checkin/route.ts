@@ -90,12 +90,31 @@ export async function POST(request: Request) {
     if (!currentWorkoutVersion || !currentNutritionVersion) return NextResponse.json({ action: "profile_updated_only", changed: [] });
 
     const reason = goalChanged ? "goal_change" : placeChanged ? "equipment_change" : restrictionsChanged ? "injury_change" : "goal_change";
-    const profileForEngine = { ...updatedProfile, meal_count: currentNutritionVersion.meal_count ?? updatedProfile.meal_count ?? 4 };
+    const { data: latestMeasurement } = await supabase
+      .from("body_measurements")
+      .select("measured_at, weight_kg, waist_cm, chest_cm, arm_cm, thigh_cm")
+      .eq("user_id", userId)
+      .order("measured_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const progressSnapshot = latestMeasurement ? {
+      measured_at: latestMeasurement.measured_at,
+      weight_kg: latestMeasurement.weight_kg,
+      waist_cm: latestMeasurement.waist_cm,
+      chest_cm: latestMeasurement.chest_cm,
+      arm_cm: latestMeasurement.arm_cm,
+      thigh_cm: latestMeasurement.thigh_cm,
+    } : null;
+    const profileForEngine = {
+      ...updatedProfile,
+      current_weight_kg: latestMeasurement?.weight_kg ?? updatedProfile.current_weight_kg,
+      meal_count: currentNutritionVersion.meal_count ?? updatedProfile.meal_count ?? 4,
+    };
     const generatedPlan = generateInitialPlan(parsePlanningProfile(profileForEngine), await getPlanningExerciseCatalog());
 
     const { data: run, error: runError } = await supabase
       .from("plan_generation_runs")
-      .insert({ user_id: userId, run_type: "manual_regeneration", status: "pending", input_snapshot: profileForEngine, engine_version: "checkin-v1" })
+      .insert({ user_id: userId, run_type: "manual_regeneration", status: "pending", input_snapshot: { ...profileForEngine, progress_snapshot: progressSnapshot }, engine_version: "checkin-v1" })
       .select("id")
       .single();
     if (runError || !run) throw runError ?? new Error("Unable to start plan regeneration.");
@@ -103,7 +122,7 @@ export async function POST(request: Request) {
     await supabase.from("workout_plan_versions").update({ active: false }).eq("id", currentWorkoutVersion.id);
     const { data: workoutVersion, error: workoutVersionError } = await supabase
       .from("workout_plan_versions")
-      .insert({ workout_plan_id: workoutPlan.id, generation_run_id: run.id, version_number: currentWorkoutVersion.version_number + 1, profile_snapshot: profileForEngine, reason })
+      .insert({ workout_plan_id: workoutPlan.id, generation_run_id: run.id, version_number: currentWorkoutVersion.version_number + 1, profile_snapshot: { ...profileForEngine, progress_snapshot: progressSnapshot }, reason })
       .select("id")
       .single();
     if (workoutVersionError || !workoutVersion) throw workoutVersionError ?? new Error("Unable to create workout version.");
@@ -139,7 +158,7 @@ export async function POST(request: Request) {
       nutrition_plan_id: nutritionPlan.id,
       generation_run_id: run.id,
       version_number: currentNutritionVersion.version_number + 1,
-      profile_snapshot: profileForEngine,
+      profile_snapshot: { ...profileForEngine, progress_snapshot: progressSnapshot },
       calories: generatedPlan.calories,
       protein_grams: generatedPlan.proteinGrams,
       carbs_grams: generatedPlan.carbsGrams,

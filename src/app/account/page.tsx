@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { AccountDataExport } from "@/components/account-data-export";
 import { AccountForm } from "@/components/account-form";
 import { AccountPrivacyForm } from "@/components/account-privacy-form";
 import { AppHeader } from "@/components/app-header";
@@ -93,6 +94,7 @@ export default async function AccountPage() {
 
             <AccountForm initialName={initialName} initialEmail={auth.user.email ?? ""} />
             <AccountPrivacyForm initialAnalytics={latestConsent.get("analytics") ?? false} initialHealthData={latestConsent.get("health_data") ?? false} />
+            <AccountDataExport />
           </section>
 
           <aside className="space-y-6">

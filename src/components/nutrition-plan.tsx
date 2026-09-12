@@ -133,7 +133,7 @@ function outsideName(meal: NutritionMeal, isOutside: boolean) {
 
 export function NutritionPlan({ meals, alternatives, foodIds, mealCount, todayCompletedMealIds, completedDates, mealsOutSlots = [] }: NutritionPlanProps) {
   const router = useRouter();
-  const [openMeal, setOpenMeal] = useState<string | null>(meals[0]?.id ?? null);
+  const [openMeal, setOpenMeal] = useState<string | null>(null);
   const [completedMeals, setCompletedMeals] = useState<string[]>(todayCompletedMealIds);
   const [selectedAlternatives, setSelectedAlternatives] = useState<Record<string, string>>(() => Object.fromEntries(meals.flatMap((meal) => meal.items.filter((item) => item.alternativeGroup && item.selectedFoodName).map((item) => [`${meal.id}:${item.alternativeGroup}`, item.selectedFoodName as string]))));
   const [openAlternative, setOpenAlternative] = useState<string | null>(null);
@@ -141,6 +141,7 @@ export function NutritionPlan({ meals, alternatives, foodIds, mealCount, todayCo
   const [mealsOutOpen, setMealsOutOpen] = useState(false);
   const [selectedMealsOutSlots, setSelectedMealsOutSlots] = useState<string[]>(mealsOutSlots);
   const [savingMealsOut, setSavingMealsOut] = useState(false);
+  const [mealsOutError, setMealsOutError] = useState<string | null>(null);
   const [isChangingMealCount, setIsChangingMealCount] = useState(false);
   const [weekDates] = useState<string[]>(currentWeekDates);
   const [completedDayDates, setCompletedDayDates] = useState<string[]>(completedDates);
@@ -163,14 +164,30 @@ export function NutritionPlan({ meals, alternatives, foodIds, mealCount, todayCo
       : [...selectedMealsOutSlots, slot];
     setSelectedMealsOutSlots(nextSlots);
     setSavingMealsOut(true);
+    setMealsOutError(null);
     const response = await fetch("/api/profile/meals-out", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ slots: nextSlots }),
     });
+    if (!response.ok) {
+      setSavingMealsOut(false);
+      setSelectedMealsOutSlots(mealsOutSlots);
+      setMealsOutError("No hemos podido guardar tus comidas fuera de casa.");
+      return;
+    }
+
+    const regenerationResponse = await fetch("/api/plans/nutrition/regenerate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ preserveFoods: true }),
+    });
     setSavingMealsOut(false);
-    if (response.ok) router.refresh();
-    else setSelectedMealsOutSlots(mealsOutSlots);
+    if (regenerationResponse.ok) router.refresh();
+    else {
+      setSelectedMealsOutSlots(mealsOutSlots);
+      setMealsOutError("Hemos guardado la preferencia, pero no hemos podido recalcular tu dieta. Inténtalo de nuevo.");
+    }
   }
 
   async function selectAlternative(mealId: string, group: string, food: string, mealItems: NutritionItem[]) {
@@ -227,7 +244,7 @@ export function NutritionPlan({ meals, alternatives, foodIds, mealCount, todayCo
           <span className="flex items-center gap-3"><MapPin className="text-[#72873f]" size={18} /><span><span className="block text-sm font-semibold">Comidas fuera de casa</span><span className="block text-xs text-[#819078]">¿Trabajas, estudias o te desplazas? Marca las comidas que te cuesta hacer en casa y recibirás una guía más fácil para resolverlas fuera.</span></span></span>
           <ChevronDown size={18} className={`text-[#60703d] transition-transform ${mealsOutOpen ? "rotate-180" : ""}`} />
         </button>
-        {mealsOutOpen && <div className="mt-4 flex flex-wrap gap-2">{mealOutOptions.map((option) => <button key={option.id} type="button" disabled={savingMealsOut} onClick={() => toggleMealOutSlot(option.id)} className={`rounded-full border px-3 py-2 text-xs font-semibold ${selectedMealsOutSlots.includes(option.id) ? "border-[#72873f] bg-[#e7f5b4] text-[#60703d]" : "border-[#cfd7c8] text-[#68736b]"}`}>{option.label}</button>)}{savingMealsOut && <LoaderCircle size={16} className="my-2 animate-spin text-[#60703d]" />}</div>}
+        {mealsOutOpen && <div className="mt-4 flex flex-wrap gap-2">{mealOutOptions.map((option) => <button key={option.id} type="button" disabled={savingMealsOut} onClick={() => toggleMealOutSlot(option.id)} className={`rounded-full border px-3 py-2 text-xs font-semibold ${selectedMealsOutSlots.includes(option.id) ? "border-[#72873f] bg-[#e7f5b4] text-[#60703d]" : "border-[#cfd7c8] text-[#68736b]"}`}>{option.label}</button>)}{savingMealsOut && <LoaderCircle size={16} className="my-2 animate-spin text-[#60703d]" />}{mealsOutError && <p className="basis-full text-xs font-semibold text-[#a64e3c]">{mealsOutError}</p>}</div>}
       </div>
       <div className="mt-6 flex items-center justify-between text-sm text-[#68736b]"><span>{dayCompleted ? "Día completado" : "Día pendiente"}</span><span>Modo preciso</span></div>
       {completionError && <p className="mt-3 text-sm font-medium text-[#a64e3c]">{completionError}</p>}

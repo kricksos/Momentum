@@ -1,4 +1,4 @@
-import { Check, Dumbbell, Flame, Scale } from "lucide-react";
+import { ArrowRight, Check, Dumbbell, Flame, Scale } from "lucide-react";
 import Link from "next/link";
 
 import { AppHeader } from "@/components/app-header";
@@ -11,6 +11,7 @@ import { NutritionPlan } from "@/components/nutrition-plan";
 import { NextStepPanel } from "@/components/next-step-panel";
 import { PlanReviewNotices } from "@/components/plan-review-notices";
 import { PersonalizationStatus } from "@/components/personalization-status";
+import { ProgressCheckinForm, type ProgressCheckinSummary, type ProgressMeasurementSummary } from "@/components/progress-checkin-form";
 import { ProgressPanel } from "@/components/progress-panel";
 import { TrainingDaysPanel } from "@/components/training-days-panel";
 import { WorkoutHistoryPanel } from "@/components/workout-history-panel";
@@ -101,6 +102,7 @@ export default async function DashboardPage() {
     { data: activePlan },
     { data: nutrition },
     { data: measurements },
+    { data: latestCheckin },
   ] = await Promise.all([
     db
       .from("profiles")
@@ -128,6 +130,13 @@ export default async function DashboardPage() {
       )
       .eq("user_id", auth.user.id)
       .order("measured_at", { ascending: true }),
+    db
+      .from("progress_checkins")
+      .select("checked_in_at, energy_score, sleep_score, stress_score, soreness_score, training_adherence, nutrition_adherence, pain_present, pain_area, pain_severity, notes")
+      .eq("user_id", auth.user.id)
+      .order("checked_in_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ]);
   const cardioPlan = cardioRecommendations(
     typeof profile?.primary_goal === "string" ? profile.primary_goal : "",
@@ -752,13 +761,29 @@ export default async function DashboardPage() {
     />
   );
   const progress = (
-    <ProgressPanel
-      key={displayedTargetWeightKg ?? "no-target"}
-      entries={measurementEntries}
-      targetWeightKg={displayedTargetWeightKg}
-      primaryGoal={displayedPrimaryGoal}
-      daysSinceLastMeasurement={daysSinceLastMeasurement}
-    />
+    <div className="space-y-6">
+      <section className="rounded-3xl border border-[#cdd9bd] bg-gradient-to-r from-[#eef6da] via-[#f7f9ef] to-[#eef4e1] p-5">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="max-w-2xl">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#6d7f42]">Revisión recomendada</p>
+            <h2 className="mt-1 text-xl font-semibold text-[#1d2a16]">¿Han cambiado tus objetivos o tu semana?</h2>
+            <p className="mt-1 text-sm text-[#4b5a46]">Revisa tus datos de entrenamiento, nutrición, disponibilidad y molestias. Con esa información podemos actualizar tu dieta y tu rutina.</p>
+          </div>
+          <a href="/checkin" className="inline-flex items-center gap-2 rounded-full bg-[#18231f] px-6 py-3 text-sm font-semibold text-white shadow-[0_8px_24px_rgba(24,35,31,0.24)] transition-transform hover:-translate-y-0.5 hover:bg-[#0f1714]">
+            Actualizar mi plan
+            <ArrowRight size={16} />
+          </a>
+        </div>
+      </section>
+      <ProgressCheckinForm latestCheckin={latestCheckin as ProgressCheckinSummary | null} initialTargetWeightKg={profile?.target_weight_kg ?? null} latestMeasurement={latestMeasurement as ProgressMeasurementSummary | null} previousMeasurement={firstMeasurement && latestMeasurement && firstMeasurement.id !== latestMeasurement.id ? sortedMeasurements[sortedMeasurements.length - 2] as ProgressMeasurementSummary : null} primaryGoal={displayedPrimaryGoal} />
+      <ProgressPanel
+        key={displayedTargetWeightKg ?? "no-target"}
+        entries={measurementEntries}
+        targetWeightKg={displayedTargetWeightKg}
+        primaryGoal={displayedPrimaryGoal}
+        daysSinceLastMeasurement={daysSinceLastMeasurement}
+      />
+    </div>
   );
   return (
     <main className="min-h-screen bg-[#f4f1e9] px-5 py-6 text-[#18231f] sm:px-8 sm:py-8">

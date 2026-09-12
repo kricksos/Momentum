@@ -7,7 +7,7 @@ export function PlanReviewNotices({ nutritionPending, workoutPending }: PlanRevi
   if (!nutritionPending && !workoutPending) return null;
 
   if (nutritionPending && workoutPending) {
-    return <section className="mt-6 flex flex-col gap-4 rounded-2xl border border-[#e5c66e] bg-[#fff1c6] p-5 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-sm font-semibold text-[#795d10]">Tu plan completo necesita una actualización</p><p className="mt-1 text-sm text-[#795d10]">Tus intolerancias y lesiones han cambiado. Revisa tus datos antes de actualizar dieta y rutina.</p></div><Link href="/checkin" className="inline-flex shrink-0 items-center justify-center rounded-full bg-[#18231f] px-4 py-2 text-sm font-semibold text-[#f6f4ed]">Actualizar mi plan</Link></section>;
+    return <section className="mt-6 flex flex-col gap-4 rounded-2xl border border-[#e5c66e] bg-[#fff1c6] p-5 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-sm font-semibold text-[#795d10]">Tu plan completo necesita una actualización</p><p className="mt-1 text-sm text-[#795d10]">Tus intolerancias y lesiones han cambiado. Revisa tus datos antes de actualizar dieta y rutina.</p></div><Link href="/checkin" className="inline-flex shrink-0 items-center justify-center rounded-full bg-[#18231f] px-4 py-2 text-sm font-semibold text-[#f6f4ed]">Revisar cambios del plan</Link></section>;
   }
 
   const notice = nutritionPending

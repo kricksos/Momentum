@@ -5,7 +5,10 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { generateInitialPlan, parsePlanningProfile } from "@/features/planning/engine";
 
-const requestSchema = z.object({ mealCount: z.number().int().min(3).max(6).optional() }).default({});
+const requestSchema = z.object({
+  mealCount: z.number().int().min(3).max(6).optional(),
+  preserveFoods: z.boolean().optional(),
+}).default({});
 
 function errorMessage(error: unknown) {
   if (error instanceof Error) return error.message;
@@ -27,6 +30,7 @@ export async function POST(request: Request) {
     if (profileError || !profile) return NextResponse.json({ error: "Complete your profile first." }, { status: 400 });
 
     const mealCount = parsed.data.mealCount ?? profile.meal_count ?? 4;
+    const preserveFoods = parsed.data.preserveFoods === true;
     const plan = generateInitialPlan(parsePlanningProfile({ ...profile, meal_count: mealCount }));
     const { data: run, error: runError } = await supabase.from("plan_generation_runs").insert({ user_id: authData.user.id, run_type: "manual_regeneration", status: "pending", input_snapshot: { ...profile, meal_count: mealCount }, engine_version: "rules-v1" }).select("id").single();
     if (runError || !run) throw runError ?? new Error("Unable to start nutrition generation.");
@@ -39,6 +43,14 @@ export async function POST(request: Request) {
       supabase.from("nutrition_plan_versions").select("id").eq("nutrition_plan_id", planId).eq("active", true).maybeSingle(),
       supabase.from("nutrition_plan_versions").select("version_number").eq("nutrition_plan_id", planId).order("version_number", { ascending: false }).limit(1).maybeSingle(),
     ]);
+    const { data: currentMeals } = preserveFoods && oldVersion
+      ? await supabase.from("nutrition_meals").select("id, meal_order, target_calories").eq("nutrition_plan_version_id", oldVersion.id).order("meal_order")
+      : { data: [] };
+    const currentMealIds = (currentMeals ?? []).map((meal) => meal.id);
+    const { data: currentItems } = preserveFoods && currentMealIds.length
+      ? await supabase.from("nutrition_meal_items").select("meal_id, food_id, quantity_grams, role, alternative_group, substitution_group, weight_basis").in("meal_id", currentMealIds)
+      : { data: [] };
+    const currentMealByOrder = new Map((currentMeals ?? []).map((meal) => [meal.meal_order, meal]));
     const { data: version, error: versionError } = await supabase.from("nutrition_plan_versions").insert({ nutrition_plan_id: planId, generation_run_id: run.id, version_number: (latestVersion?.version_number ?? 0) + 1, profile_snapshot: { ...profile, meal_count: mealCount }, calories: plan.calories, protein_grams: plan.proteinGrams, carbs_grams: plan.carbsGrams, fats_grams: plan.fatsGrams, meal_count: plan.mealCount, precision_mode: "precise", reason: "restriction_change", active: false }).select("id").single();
     if (versionError || !version) throw versionError ?? new Error("Unable to create nutrition version.");
 
@@ -49,7 +61,21 @@ export async function POST(request: Request) {
     for (const [index, meal] of plan.meals.entries()) {
       const { data: savedMeal, error: mealError } = await supabase.from("nutrition_meals").insert({ nutrition_plan_version_id: version.id, name: meal.name, meal_order: index + 1, suggested_time: meal.suggestedTime, target_calories: meal.targetCalories }).select("id").single();
       if (mealError || !savedMeal) throw mealError ?? new Error("Unable to create meal.");
-      const items = meal.items.map((item) => ({ meal_id: savedMeal.id, food_id: foodByName.get(item.name)!, quantity_grams: item.quantityGrams, role: item.role, alternative_group: item.alternativeGroup ?? null, substitution_group: item.alternativeGroup ?? null, weight_basis: item.weightBasis }));
+      const currentMeal = currentMealByOrder.get(index + 1);
+      const existingItems = (currentItems ?? []).filter((item) => item.meal_id === currentMeal?.id);
+      const isMealOutside = meal.name.toLowerCase().includes("fuera de casa");
+      const existingScale = currentMeal && currentMeal.target_calories > 0 ? meal.targetCalories / currentMeal.target_calories : 1;
+      const items = preserveFoods && currentMeal && existingItems.length > 0 && !isMealOutside
+        ? existingItems.map((item) => ({
+            meal_id: savedMeal.id,
+            food_id: item.food_id,
+            quantity_grams: Math.max(1, Math.round(item.quantity_grams * existingScale)),
+            role: item.role,
+            alternative_group: item.alternative_group,
+            substitution_group: item.substitution_group,
+            weight_basis: item.weight_basis,
+          }))
+        : meal.items.map((item) => ({ meal_id: savedMeal.id, food_id: foodByName.get(item.name)!, quantity_grams: item.quantityGrams, role: item.role, alternative_group: item.alternativeGroup ?? null, substitution_group: item.alternativeGroup ?? null, weight_basis: item.weightBasis }));
       if (items.some((item) => !item.food_id)) throw new Error("Generated food is missing from catalog.");
       const { error: itemsError } = await supabase.from("nutrition_meal_items").insert(items);
       if (itemsError) throw itemsError;

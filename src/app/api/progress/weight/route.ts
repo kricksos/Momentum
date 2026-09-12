@@ -40,9 +40,7 @@ export async function POST(request: Request) {
       body_fat_percentage: parsed.data.bodyFatPercentage ?? existing?.body_fat_percentage ?? null,
     };
 
-    const { error } = existing
-      ? await supabase.from("body_measurements").update(row).eq("id", existing.id)
-      : await supabase.from("body_measurements").insert(row);
+    const { error } = await supabase.from("body_measurements").upsert(row, { onConflict: "user_id,measured_at" });
     if (error) throw error;
 
     await supabase.from("profiles").update({ current_weight_kg: parsed.data.weightKg }).eq("user_id", authData.user.id);

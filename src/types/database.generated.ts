@@ -1055,6 +1055,71 @@ export type Database = {
           },
         ]
       }
+      progress_checkins: {
+        Row: {
+          checked_in_at: string
+          created_at: string
+          energy_score: number
+          id: string
+          nutrition_adherence: string
+          notes: string | null
+          pain_area: string | null
+          pain_present: boolean
+          pain_severity: number | null
+          questionnaire_version: string
+          sleep_score: number
+          soreness_score: number
+          stress_score: number
+          training_adherence: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          checked_in_at?: string
+          created_at?: string
+          energy_score: number
+          id?: string
+          nutrition_adherence: string
+          notes?: string | null
+          pain_area?: string | null
+          pain_present?: boolean
+          pain_severity?: number | null
+          questionnaire_version?: string
+          sleep_score: number
+          soreness_score: number
+          stress_score: number
+          training_adherence: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          checked_in_at?: string
+          created_at?: string
+          energy_score?: number
+          id?: string
+          nutrition_adherence?: string
+          notes?: string | null
+          pain_area?: string | null
+          pain_present?: boolean
+          pain_severity?: number | null
+          questionnaire_version?: string
+          sleep_score?: number
+          soreness_score?: number
+          stress_score?: number
+          training_adherence?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "progress_checkins_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           age: number
